@@ -69,7 +69,7 @@ class ActionsPropal2SupplierOrder
 		 	global $langs,$conf,$user,$db;
 		 	$element = $object->element;
 			
-			if($object->statut!=0 && !empty($object->lines)) {
+			if($object->statut!=0 && !empty($object->lines) && $user->rights->fournisseur->facture->creer) {
 				
 				if (($conf->global->PROPAL2SUPPLIERORDER_TYPE_DOC != 'propal' && $conf->global->PROPAL2SUPPLIERORDER_TYPE_DOC != 'order')
 					|| ($conf->global->PROPAL2SUPPLIERORDER_TYPE_DOC==='propal' && $element='propal')
