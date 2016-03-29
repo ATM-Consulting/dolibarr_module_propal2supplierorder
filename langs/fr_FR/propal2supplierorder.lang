@@ -13,3 +13,6 @@ Both=Les deux
 
 ConvertToSupplierOrder=Convertir en commande fournisseur
 CreateSupplierOrder=Créer la commande fournisseur
+
+WarningThisLineCanNotBeAdded=Attention : cette ligne ne pourra pas être importée dans la commande
+WarningLineHasNotAdded=Attention ligne non ajoutée : référence produit [%s] avec une quantité de [%s]

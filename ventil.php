@@ -35,6 +35,8 @@
 		
 		dol_include_once('/fourn/class/fournisseur.commande.class.php');
 		
+		$TError = array();
+		
 		$commande_fournisseur = new CommandeFournisseur($db);
 		$ref = 'CF'.$object->ref;
 		
@@ -43,16 +45,26 @@
 		if($obj = $db->fetch_object($res)) 
 		{
 			$commande_fournisseur->fetch($obj->rowid);
-			setEventMessage('RefSupplierOrderAleadyExists');
+			setEventMessages('RefSupplierOrderAleadyExists', null, 'errors');
+			
+			if ($object_type == 'commande') header('Location:'.dol_buildpath('/commande/card.php?id='.$object->id,1));
+			else header('Location:'.dol_buildpath('/comm/propal.php?id='.$object->id,1));
+			
+			exit;
 		}
 		else 
 		{
 			$commande_fournisseur->socid = $fk_supplier;
 			$commande_fournisseur->ref_supplier = $ref;
 			
-			if($commande_fournisseur->create($user)<=0) {
-				var_dump('Create error', $commande_fournisseur);
-				exit;	
+			if($commande_fournisseur->create($user)<=0) 
+			{
+				setEventMessages('ErrorCommandFournCreate', null, 'errors');
+				
+				if ($object_type == 'commande') header('Location:'.dol_buildpath('/commande/card.php?id='.$object->id,1));
+				else header('Location:'.dol_buildpath('/comm/propal.php?id='.$object->id,1));
+				
+				exit;
 			}
 			
 			$fk_cmd_fourn = $commande_fournisseur->id;
@@ -72,14 +84,17 @@
 					$commande_fournisseur->updateline($fk_line, $line->desc, $pa, $line->qty, $line->remise_percent, $line->txtva); 
 				}
 				
-				if($res<=0) {
-					var_dump('Add line error', $o);
-					exit;
+				if($res<=0) 
+				{
+					$TError[] = $langs->trans('WarningLineHasNotAdded', $line->product_ref, $line->qty);
 				}
 							
 			}
 
+			if (!empty($TError)) setEventMessages('', $TError, 'errors');
+			
 			header('Location:'.dol_buildpath('/fourn/commande/card.php?id='.$fk_cmd_fourn,1));
+			exit;
 		}
 
 	}
@@ -150,7 +165,7 @@
 		<?php
 		
 		foreach($object->lines as $k=>&$line) {
-			
+			$add_warning = false;
 			if($line->product_type != 0 && $line->product_type != 1) continue;
 			
 			$pa_as_input = true;
@@ -166,10 +181,12 @@
 					echo $formCore->hidden('TLine['.$k.'][fk_fournprice]', $line->fk_fournprice);
 				}
 				else if(empty($line->pa)) {
-					$pa = _getPrice($p,$fk_supplier,$line->qty);	
+					$pa = _getPrice($p,$fk_supplier,$line->qty);
+					if ($pa == 0) $add_warning =true;
 				}
 				else{
 					$pa = $line->pa;
+					$add_warning =true;
 				}
 				
 				$product_label=$p->getNomUrl(1);
@@ -180,11 +197,10 @@
 			}
 			echo $formCore->hidden('TLine['.$k.'][fk_product]', $line->fk_product);
 			
-			
 			echo '<tr>
 				<td>'.$product_label.'</td>
 				<td align="right">'.price($line->qty).'</td>
-				<td align="right">'.($pa_as_input ? $formCore->texte('', 'TLine['.$k.'][pa]', price($pa), 5,50) : $formCore->hidden('TLine['.$k.'][pa]', $pa).price($pa)).'</td>
+				<td align="right">'.($add_warning ? img_warning($langs->trans('WarningThisLineCanNotBeAdded')) : '').' '.($pa_as_input ? $formCore->texte('', 'TLine['.$k.'][pa]', price($pa), 5,50) : $formCore->hidden('TLine['.$k.'][pa]', $pa).price($pa)).'</td>
 			</tr>';
 			
 			
