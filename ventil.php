@@ -29,50 +29,78 @@
 	else _showVentil($fk_supplier,$object,$fk_object,$object_type);
 	
 	
-	function _create_order($fk_supplier,&$object,$fk_object,$object_type) {
+	function _create_order($fk_supplier,&$object,$fk_object,$object_type) 
+	{
 		global $conf,$user,$db,$langs;
 		
-		/*dol_include_once('/fourn/class/fournisseur.facture.class.php');
-		$f=new FactureFournisseur($db);
-	*/
 		dol_include_once('/fourn/class/fournisseur.commande.class.php');
-		$o=new CommandeFournisseur($db);
-	
+		
+		$commande_fournisseur = new CommandeFournisseur($db);
 		$ref = 'CF'.$object->ref;
 		
 		$res = $db->query("SELECT rowid FROM ".MAIN_DB_PREFIX."commande_fournisseur WHERE ref_supplier='".$ref."'");
 		
-		if($obj = $db->fetch_object($res)) {
-			$o->fetch($obj->rowid);
-			setEventMessage('FactureAleadyCreated');
+		if($obj = $db->fetch_object($res)) 
+		{
+			$commande_fournisseur->fetch($obj->rowid);
+			setEventMessage('RefSupplierOrderAleadyExists');
 		}
-		else {
-			$o->socid = $fk_supplier;
-			$o->ref_supplier = $ref;
+		else 
+		{
+			$commande_fournisseur->socid = $fk_supplier;
+			$commande_fournisseur->ref_supplier = $ref;
 			
-			if($o->create($user)<=0) {
-				var_dump($o);
+			if($commande_fournisseur->create($user)<=0) {
+				var_dump('Create error', $commande_fournisseur);
 				exit;	
 			}
 			
-			foreach($_POST['TLine'] as $k=>$data) {
-				
+			$fk_cmd_fourn = $commande_fournisseur->id;
+			foreach($_POST['TLine'] as $k=>$data) 
+			{
 				$line = $object->lines[$k];
-				
 				$pa = price2num($data['pa']);
-				//$desc, $pu_ht, $qty, $txtva, $txlocaltax1=0.0, $txlocaltax2=0.0, $fk_product=0, $fk_prod_fourn_price
-				$res = $o->addline($line->desc, $pa, $line->qty, $line->txtva, $line->txlocaltax1, $line->txlocaltax2,$line->fk_product,$line->remise_percent);
+
+				$fourn_ref = '';
+				if (!empty($line->fk_product)) $fourn_ref = _getFournRef($db, $line, $commande_fournisseur->socid);
+				
+				$res = $commande_fournisseur->addline($line->desc, $pa, $line->qty, $line->txtva, $line->txlocaltax1, $line->txlocaltax2, $line->fk_product, (int)$line->fk_fournprice, $fourn_ref, $line->remise_percent, 'HT', 0.0, $line->product_type, $line->info_bits, false, $line->date_start, $line->date_end, $line->array_options, $line->fk_unit);
+
+				if (!empty($fourn_ref))
+				{
+					$fk_line = $commande_fournisseur->rowid; // [PH] Oui je sais ça semble pas logique, mais la fonction addline de dolibarr stock le fk_line dans le rowid de l'objet
+					$commande_fournisseur->updateline($fk_line, $line->desc, $pa, $line->qty, $line->remise_percent, $line->txtva); 
+				}
+				
 				if($res<=0) {
-					var_dump($o);exit;
+					var_dump('Add line error', $o);
+					exit;
 				}
 							
 			}
-			
+
+			header('Location:'.dol_buildpath('/fourn/commande/card.php?id='.$fk_cmd_fourn,1));
+		}
+
+	}
+	
+	function _getFournRef(&$db, &$line, $fk_fourn)
+	{
+		$sql = "SELECT pfp.ref_fourn";
+		$sql.= " FROM ".MAIN_DB_PREFIX."product_fournisseur_price as pfp";
+		$sql.= " WHERE pfp.fk_product = ".$line->fk_product;
+		$sql.= " AND pfp.fk_soc = ".$fk_fourn;
+		$sql.= " AND pfp.quantity <= ".$line->qty;
+		$sql.= " ORDER BY pfp.quantity DESC";
+		$sql.= " LIMIT 1";
+		
+		$resql = $db->query($sql);
+		if ($resql && ($row = $db->fetch_object($resql)))
+		{
+			return $row->ref_fourn;
 		}
 		
-		
-		header('location:'.dol_buildpath('/fourn/facture/card.php?id='.$f->id,1));
-		
+		return '';
 	}
 	
 	function _getPrice(&$p, $fk_supplier, $qty) {
@@ -180,12 +208,17 @@
 	}
 
 	function _supplier_choice($fk_object,$object_type) {
-		global $conf,$user,$db,$langs,$form;
+		global $conf,$user,$db,$langs;
+		
+		$langs->load('companies');
+		dol_include_once('/core/class/html.form.class.php');
+		$form = new Form($db);
 		
 		llxHeader();
 		dol_fiche_head();
 		
 		$formCore=new TFormCore('auto','formsupplier','get');
+		echo $langs->trans('Supplier');
 		echo $form->select_thirdparty_list(-1,'fk_supplier',' s.fournisseur=1 ',0);
 		echo $formCore->hidden('fk_object', $fk_object);
 		echo $formCore->hidden('object_type', $object_type);
