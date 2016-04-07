@@ -74,6 +74,8 @@
 				$line = $object->lines[$k];
 				$pa = price2num($data['pa']);
 
+				if (!empty($conf->global->PROPAL2SUPPLIERORDER_DISALLOW_IMPORT_LINE_WITH_PRICE_ZERO) && $pa == 0) continue;
+
 				$fourn_ref = '';
 				// On tente de récup un prix pour ce produit, ce fournisseur et cette quantité, sinon on le crée
 				if (!empty($line->fk_product)) 
@@ -221,11 +223,11 @@
 					$pa = _getPrice($p,$fk_supplier,$line->qty);
 					$product = new Product($db);
 					$product->fetch($line->fk_product);
-					if (empty($product->status_buy)) $add_warning =true;
+					if (empty($product->status_buy)) $add_warning = true;
 				}
 				else{
 					$pa = $line->pa;
-					$add_warning =true;
+					$add_warning = true;
 				}
 				
 				$product_label=$p->getNomUrl(1);
@@ -234,6 +236,9 @@
 				$product_label = $line->desc;
 				$pa = $line->pa;
 			}
+			
+			if (!empty($conf->global->PROPAL2SUPPLIERORDER_DISALLOW_IMPORT_LINE_WITH_PRICE_ZERO) && $pa == 0) $add_warning = true;
+			
 			echo $formCore->hidden('TLine['.$k.'][fk_product]', $line->fk_product);
 			
 			echo '<tr>
