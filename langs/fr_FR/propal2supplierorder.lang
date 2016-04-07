@@ -15,4 +15,6 @@ ConvertToSupplierOrder=Convertir en commande fournisseur
 CreateSupplierOrder=Créer la commande fournisseur
 
 WarningThisLineCanNotBeAdded=Attention : cette ligne ne pourra pas être importée dans la commande
-WarningLineHasNotAdded=Attention ligne non ajoutée : référence produit [%s] avec une quantité de [%s]
+WarningLineHasNotAdded=Attention ligne non ajoutée : référence produit [%s] avec une quantité de [%s] car hors achat
+
+PROPAL2SUPPLIERORDER_DISALLOW_IMPORT_LINE_WITH_PRICE_ZERO=Refuser la récupération des lignes dont le prix est à 0

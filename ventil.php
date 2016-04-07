@@ -70,21 +70,34 @@
 			$fk_cmd_fourn = $commande_fournisseur->id;
 			foreach($_POST['TLine'] as $k=>$data) 
 			{
+				$status_buy = 1;
 				$line = $object->lines[$k];
 				$pa = price2num($data['pa']);
 
 				$fourn_ref = '';
 				// On tente de récup un prix pour ce produit, ce fournisseur et cette quantité, sinon on le crée
-				if (!empty($line->fk_product)) $fourn_ref = _getFournRef($db, $line, $commande_fournisseur->socid);
-				
-				if(empty($fourn_ref)) $fourn_ref = _createTarifFourn($fk_supplier, $line->fk_product, $fourn_ref, $line->qty, $data['pa']);
-				
-				$res = $commande_fournisseur->addline($line->desc, $pa, $line->qty, $line->txtva, $line->txlocaltax1, $line->txlocaltax2, $line->fk_product, (int)$line->fk_fournprice, $fourn_ref, $line->remise_percent, 'HT', 0.0, $line->product_type, $line->info_bits, false, $line->date_start, $line->date_end, $line->array_options, $line->fk_unit);
-
-				if (!empty($fourn_ref))
+				if (!empty($line->fk_product)) 
 				{
-					$fk_line = $commande_fournisseur->rowid; // [PH] Oui je sais ça semble pas logique, mais la fonction addline de dolibarr stock le fk_line dans le rowid de l'objet
-					$commande_fournisseur->updateline($fk_line, $line->desc, $pa, $line->qty, $line->remise_percent, $line->txtva); 
+					$product = new Product($db);
+					$product->fetch($line->fk_product);
+					$status_buy = $product->status_buy;
+					if (!empty($status_buy)) $fourn_ref = _getFournRef($db, $line, $commande_fournisseur->socid);
+				}
+				
+				if ($status_buy)
+				{
+					if(empty($fourn_ref)) $fourn_ref = _createTarifFourn($fk_supplier, $line->fk_product, $fourn_ref, $line->qty, $data['pa'], $line->product_ref);
+					
+					$res = $commande_fournisseur->addline($line->desc, $pa, $line->qty, $line->txtva, $line->txlocaltax1, $line->txlocaltax2, $line->fk_product, (int)$line->fk_fournprice, $fourn_ref, $line->remise_percent, 'HT', 0.0, $line->product_type, $line->info_bits, false, $line->date_start, $line->date_end, $line->array_options, $line->fk_unit);
+	
+					if (!empty($fourn_ref))
+					{
+						$fk_line = $commande_fournisseur->rowid; // [PH] Oui je sais ça semble pas logique, mais la fonction addline de dolibarr stock le fk_line dans le rowid de l'objet
+						$commande_fournisseur->updateline($fk_line, $line->desc, $pa, $line->qty, $line->remise_percent, $line->txtva); 
+					}	
+				}
+				else {
+					$res = 0; // Hors achat
 				}
 				
 				if($res<=0) 
@@ -121,11 +134,13 @@
 		return '';
 	}
 	
-	function _createTarifFourn($fk_fourn, $fk_product, $ref_fourn, $qty, $price) {
+	function _createTarifFourn($fk_fourn, $fk_product, $ref_fourn, $qty, $price, $product_ref) {
 		
 		global $db, $user;
 		
-		if (empty($fk_product)) return true;
+		if (empty($fk_product)) return true; // Ligne libre
+		
+		$ref_fourn = $product_ref.'-'.$qty;
 		
 		$product = new ProductFournisseur($db);
 		$product->fetch($fk_product);
@@ -135,7 +150,7 @@
 			$f = new Fournisseur($db);
 			$f->id = $fk_fourn;
 			$ret=$product->update_buyprice($qty, $price, $user, 'HT', $f, $_POST["oselDispo"], $ref_fourn, 20);
-			if($ret > 0) return $ref_fourn;
+			if($ret == 0) return $ref_fourn;
 		}
 		
 	}
@@ -204,7 +219,9 @@
 				}
 				else if(empty($line->pa)) {
 					$pa = _getPrice($p,$fk_supplier,$line->qty);
-					if ($pa == 0) $add_warning =true;
+					$product = new Product($db);
+					$product->fetch($line->fk_product);
+					if (empty($product->status_buy)) $add_warning =true;
 				}
 				else{
 					$pa = $line->pa;
