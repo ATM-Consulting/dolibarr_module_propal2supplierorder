@@ -125,6 +125,8 @@
 		
 		global $db, $user;
 		
+		if (empty($fk_product)) return true;
+		
 		$product = new ProductFournisseur($db);
 		$product->fetch($fk_product);
 		$ret=$product->add_fournisseur($user, $fk_fourn, $ref_fourn, $qty);
