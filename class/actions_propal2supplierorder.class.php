@@ -62,29 +62,39 @@ class ActionsPropal2SupplierOrder
 	function addMoreActionsButtons($parameters, &$object, &$action, $hookmanager)
 	{
 		$error = 0; // Error counter
+		global $langs,$conf,$user,$db;
+		$element = $object->element;
+		$langs->load('propal2supplierorder@propal2supplierorder');
 		
-		
-		if (in_array('ordercard', explode(':', $parameters['context'])) || in_array('propalcard', explode(':', $parameters['context'])))
+		if (in_array('propalcard', explode(':', $parameters['context'])))
 		{
-		 	global $langs,$conf,$user,$db;
-		 	$element = $object->element;
-			
-			if($object->statut!=0 && !empty($object->lines) && $user->rights->fournisseur->facture->creer) {
-				
-				if (($conf->global->PROPAL2SUPPLIERORDER_TYPE_DOC != 'propal' && $conf->global->PROPAL2SUPPLIERORDER_TYPE_DOC != 'order')
-					|| ($conf->global->PROPAL2SUPPLIERORDER_TYPE_DOC==='propal' && $element='propal')
-					|| ($conf->global->PROPAL2SUPPLIERORDER_TYPE_DOC==='order' && $element='commande')
-				)
-			
-				$langs->load('propal2supplierorder@propal2supplierorder');
-				
-				?>
-				<div class="inline-block divButAction"><a href="<?php 
-					echo dol_buildpath('/propal2supplierorder/ventil.php?fk_object='.$object->id.'&object_type='.$element,1) 
-				?>" class="butAction"><?php echo $langs->trans('ConvertToSupplierOrder'); ?></a></div>
-				<?php
-			}		 
+			if($object->statut !=0 && !empty($object->lines) && $user->rights->fournisseur->facture->creer)
+			{
+				if ($conf->global->PROPAL2SUPPLIERORDER_TYPE_DOC == 'propal' || $conf->global->PROPAL2SUPPLIERORDER_TYPE_DOC == 'both')
+				{
+					print '
+						<div class="inline-block divButAction">
+							<a href="'.dol_buildpath('/propal2supplierorder/ventil.php?fk_object='.$object->id.'&object_type='.$element,1).'" class="butAction">'.$langs->trans('ConvertToSupplierOrder').'</a>
+						</div>
+					';
+				}
+			}
 		}
+		elseif (in_array('ordercard', explode(':', $parameters['context'])))
+		{
+			if($object->statut !=0 && !empty($object->lines) && $user->rights->fournisseur->facture->creer)
+			{
+				if ($conf->global->PROPAL2SUPPLIERORDER_TYPE_DOC == 'order' || $conf->global->PROPAL2SUPPLIERORDER_TYPE_DOC == 'both')
+				{
+					print '
+						<div class="inline-block divButAction">
+							<a href="'.dol_buildpath('/propal2supplierorder/ventil.php?fk_object='.$object->id.'&object_type='.$element,1).'" class="butAction">'.$langs->trans('ConvertToSupplierOrder').'</a>
+						</div>
+					';
+				}
+			}
+		}
+		
 
 		if (! $error)
 		{
