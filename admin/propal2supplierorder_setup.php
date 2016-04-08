@@ -127,6 +127,15 @@ print '<td align="center" width="300">';
 print ajax_constantonoff('PROPAL2SUPPLIERORDER_DISALLOW_IMPORT_LINE_WITH_PRICE_ZERO');
 print '</td></tr>';
 
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("PROPAL2SUPPLIERORDER_REDIRECT_ON_CF_IF_EXISTS").'</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="center" width="300">';
+print ajax_constantonoff('PROPAL2SUPPLIERORDER_REDIRECT_ON_CF_IF_EXISTS');
+print '</td></tr>';
+
+
 print '</table>';
 
 llxFooter();

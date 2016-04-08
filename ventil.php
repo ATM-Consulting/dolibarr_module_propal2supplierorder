@@ -45,9 +45,11 @@
 		if($obj = $db->fetch_object($res)) 
 		{
 			$commande_fournisseur->fetch($obj->rowid);
-			setEventMessages('RefSupplierOrderAleadyExists', null, 'errors');
+			setEventMessages('RefSupplierOrderAleadyExists', null, 'warnings');
 			
-			if ($object_type == 'commande') header('Location:'.dol_buildpath('/commande/card.php?id='.$object->id,1));
+			//TODO peut être une redirection sur la commande fourn (on à l'objet chargé juste au dessus)
+			if (!empty($conf->global->PROPAL2SUPPLIERORDER_REDIRECT_ON_CF_IF_EXISTS)) header('Location:'.dol_buildpath('/fourn/commande/card.php?id='.$commande_fournisseur->id,1));
+			elseif ($object_type == 'commande') header('Location:'.dol_buildpath('/commande/card.php?id='.$object->id,1));
 			else header('Location:'.dol_buildpath('/comm/propal.php?id='.$object->id,1));
 			
 			exit;
@@ -56,6 +58,7 @@
 		{
 			$commande_fournisseur->socid = $fk_supplier;
 			$commande_fournisseur->ref_supplier = $ref;
+			$commande_fournisseur->linked_objects[$object->element] = $object->id;
 			
 			if($commande_fournisseur->create($user)<=0) 
 			{
