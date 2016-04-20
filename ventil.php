@@ -212,29 +212,33 @@
 			if($line->fk_product>0) {
 				$p=new ProductFournisseur($db);
 				$p->fetch($line->fk_product);
-			
+				
+				$line_pa = !empty($line->pa_ht) ? $line->pa_ht : $line->pa;
+		
 				if($line->fk_fournprice>0 && $p->fetch_product_fournisseur_price($line->fk_fournprice)>0) {
 					$pa_as_input = false;
 					$pa = $p->fourn_unitprice;
 
 					echo $formCore->hidden('TLine['.$k.'][fk_fournprice]', $line->fk_fournprice);
 				}
-				else if(empty($line->pa)) {
+				else if(empty($line_pa)) {
+				//var_dump($line);
+
 					$pa = _getPrice($p,$fk_supplier,$line->qty);
 					$product = new Product($db);
 					$product->fetch($line->fk_product);
 					if (empty($product->status_buy)) $add_warning = true;
 				}
 				else{
-					$pa = $line->pa;
+					$pa = $line_pa;
 					$add_warning = true;
 				}
 				
-				$product_label=$p->getNomUrl(1);
+				$product_label=$p->getNomUrl(1) .' '.$p->label;
 			}
 			else{
 				$product_label = $line->desc;
-				$pa = $line->pa;
+				$pa = $line_pa;
 			}
 			
 			if (!empty($conf->global->PROPAL2SUPPLIERORDER_DISALLOW_IMPORT_LINE_WITH_PRICE_ZERO) && $pa == 0) $add_warning = true;
