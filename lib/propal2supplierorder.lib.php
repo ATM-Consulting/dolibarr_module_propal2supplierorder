@@ -53,3 +53,23 @@ function propal2supplierorderAdminPrepareHead()
 
     return $head;
 }
+
+/**
+ * ATTENTION fonction copié/collé de multidevise/script/interface.php
+ */
+function _getcurrencyrate(&$ATMdb,$currency_code){
+	global $conf;
+	
+	$sql = 'SELECT cr.rate
+			FROM '.MAIN_DB_PREFIX.'currency_rate as cr
+				LEFT JOIN '.MAIN_DB_PREFIX.'currency as c ON (c.rowid = cr.id_currency)
+			WHERE c.code = "'.$currency_code.'" AND cr.id_entity = '.$conf->entity.'
+				ORDER BY cr.dt_sync DESC LIMIT 1';
+	
+	$ATMdb->Execute($sql);
+	$ATMdb->Get_line();
+	
+	$Tres["currency_rate"] = round($ATMdb->Get_field('rate'),$conf->global->MAIN_MAX_DECIMALS_UNIT);
+	
+	return $Tres;
+}

@@ -19,6 +19,11 @@ WarningLineHasNotAdded=Attention ligne non ajoutée : référence produit [%s] a
 
 PROPAL2SUPPLIERORDER_DISALLOW_IMPORT_LINE_WITH_PRICE_ZERO=Refuser la récupération des lignes dont le prix est à 0
 PROPAL2SUPPLIERORDER_REDIRECT_ON_CF_IF_EXISTS=Rediriger sur la commande fournisseur, si la référence est déjà existante
-
+PROPAL2SUPPLIER_TAKE_ORIGIN_TVA=Récupérer la TVA de la ligne d'origine
 
 RefSupplierOrderAleadyExists=Référence fournisseur déjà existante
+
+
+propal2supplierorder_devisefourn=Devise fournisseur :
+propal2supplierorder_txdevisefourn=Taux devise :
+propal2supplierorder_pa_devisefourn=PA devise
