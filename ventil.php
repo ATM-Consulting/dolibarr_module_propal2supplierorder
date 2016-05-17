@@ -278,7 +278,7 @@
 			echo '<tr>
 				<td>'.$product_label.'</td>
 				<td align="right">'.price($line->qty).'</td>
-				<td align="right">'.($add_warning ? img_warning($langs->trans('WarningThisLineCanNotBeAdded')) : '').' '.($pa_as_input ? $formCore->texte('', 'TLine['.$k.'][pa]', price($pa), 5,50) : $formCore->hidden('TLine['.$k.'][pa]', $pa).price($pa)).'</td>';
+				<td align="right" class="td_pa_base">'.($add_warning ? img_warning($langs->trans('WarningThisLineCanNotBeAdded')) : '').' '.($pa_as_input ? $formCore->texte('', 'TLine['.$k.'][pa]', price($pa), 5,50, 'data-k="'.$k.'"') : $formCore->hidden('TLine['.$k.'][pa]', $pa).price($pa)).'</td>';
 			
 			_showColumnMulticurrency($supplier, $formCore, $pa, $pa_as_input, $k);
 			
@@ -376,6 +376,12 @@
 							var pa = $(this).val() / propal2supplierorder_multicurrency_rate;
 							$("#formventil input[name='TLine["+k+"][pa]']").val(pa);
 						});
+						
+						$("#formventil .td_pa_base input").unbind().change(function(event) {
+							var k = $(this).data('k');
+							var pa_devise = $(this).val() * propal2supplierorder_multicurrency_rate;
+							$("#formventil input[name='TLine["+k+"][pa_devise]']").val(pa_devise);
+						});
 					});
 				</script>
 				<?php
@@ -401,6 +407,6 @@
 		if (!empty($conf->multidevise->enabled))
 		{
 			$pa_devise = $pa * $supplier->multicurrency_rate;
-			echo '<td align="right">'.($pa_as_input ? '<input class="multicurrency_input" data-k="'.$k.'" type="text" name="TLine['.$k.'][pa_devise]" value="" placeholder="'.$pa_devise.'" size="8" />' : price($pa_devise)).'</td>';
+			echo '<td align="right">'.($pa_as_input ? '<input class="multicurrency_input" data-k="'.$k.'" type="text" name="TLine['.$k.'][pa_devise]" value="'.$pa_devise.'" size="8" />' : price($pa_devise)).'</td>';
 		}
 	}
