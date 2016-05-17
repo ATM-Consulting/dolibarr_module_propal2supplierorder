@@ -69,6 +69,14 @@
 				
 				exit;
 			}
+		
+			if (!empty($conf->multidevise->enabled))
+			{
+				$rate = GETPOST('multicurrency_tx', 'int');
+				if (empty($rate)) $rate = 1;
+				// TODO voir si on fait un UPDATE du taux de devise, car le module à dû inserer en base le taux associé au code 
+				// (update uniquement si le taux est modifiable sur le fomulaire)
+			}
 			
 			$fk_cmd_fourn = $commande_fournisseur->id;
 			foreach($_POST['TLine'] as $k=>$data) 
@@ -76,6 +84,19 @@
 				$status_buy = 1;
 				$line = $object->lines[$k];
 				$pa = price2num($data['pa']);
+				if (!empty($conf->multidevise->enabled))
+				{
+					$pa_devise = price2num($data['pa_devise']);
+					if (!empty($pa_devise))
+					{
+						$pa = $pa_devise / $rate;
+					}
+					
+					$_REQUEST['dp_pu_devise'] = $pa_devise;
+					$_REQUEST['qty'] = $line->qty;
+					$_REQUEST['buying_price'] = $pa;
+				}
+
 
 				if (!empty($conf->global->PROPAL2SUPPLIERORDER_DISALLOW_IMPORT_LINE_WITH_PRICE_ZERO) && $pa == 0) continue;
 
@@ -93,12 +114,15 @@
 				{
 					if(empty($fourn_ref)) $fourn_ref = _createTarifFourn($fk_supplier, $line->fk_product, $fourn_ref, $line->qty, $data['pa'], $line->product_ref);
 					
-					$res = $commande_fournisseur->addline($line->desc, $pa, $line->qty, $line->txtva, $line->txlocaltax1, $line->txlocaltax2, $line->fk_product, (int)$line->fk_fournprice, $fourn_ref, $line->remise_percent, 'HT', 0.0, $line->product_type, $line->info_bits, false, $line->date_start, $line->date_end, $line->array_options, $line->fk_unit);
+					$tva = 0;
+					if (!empty($conf->global->PROPAL2SUPPLIER_TAKE_ORIGIN_TVA)) $tva = $line->tva_tx;
+					
+					$res = $commande_fournisseur->addline($line->desc, $pa, $line->qty, $tva, $line->txlocaltax1, $line->txlocaltax2, $line->fk_product, (int)$line->fk_fournprice, $fourn_ref, $line->remise_percent, 'HT', 0.0, $line->product_type, $line->info_bits, false, $line->date_start, $line->date_end, $line->array_options, $line->fk_unit);
 	
 					if (!empty($fourn_ref))
 					{
 						$fk_line = $commande_fournisseur->rowid; // [PH] Oui je sais ça semble pas logique, mais la fonction addline de dolibarr stock le fk_line dans le rowid de l'objet
-						$commande_fournisseur->updateline($fk_line, $line->desc, $pa, $line->qty, $line->remise_percent, $line->txtva); 
+						$commande_fournisseur->updateline($fk_line, $line->desc, $pa, $line->qty, $line->remise_percent, $tva); 
 					}	
 				}
 				else {
@@ -197,12 +221,15 @@
 		echo $formCore->hidden('fk_supplier', $fk_supplier);
 		echo $formCore->hidden('object_type', $object_type);
 		
+		_showTauxMulticurrency($supplier);
+		
 		?>
 		<table class="border" width="100%">
 			<tr class="liste_titre">
 				<td><?php echo $langs->trans('Product') ?></td>
-				<td><?php echo $langs->trans('Qty') ?></td>
-				<td><?php echo $langs->trans('PA') ?></td>
+				<td align="right"><?php echo $langs->trans('Qty') ?></td>
+				<td align="right"><?php echo $langs->trans('PA') ?></td>
+				<?php _showTitleMulticurrency(); ?>
 			</tr>
 		<?php
 		
@@ -217,6 +244,7 @@
 				$p->fetch($line->fk_product);
 				
 				$line_pa = !empty($line->pa_ht) ? $line->pa_ht : $line->pa;
+				$line_pa = intval($line_pa);
 		
 				if($line->fk_fournprice>0 && $p->fetch_product_fournisseur_price($line->fk_fournprice)>0) {
 					$pa_as_input = false;
@@ -225,9 +253,8 @@
 					echo $formCore->hidden('TLine['.$k.'][fk_fournprice]', $line->fk_fournprice);
 				}
 				else if(empty($line_pa)) {
-				//var_dump($line);
-
 					$pa = _getPrice($p,$fk_supplier,$line->qty);
+					
 					$product = new Product($db);
 					$product->fetch($line->fk_product);
 					if (empty($product->status_buy)) $add_warning = true;
@@ -251,8 +278,11 @@
 			echo '<tr>
 				<td>'.$product_label.'</td>
 				<td align="right">'.price($line->qty).'</td>
-				<td align="right">'.($add_warning ? img_warning($langs->trans('WarningThisLineCanNotBeAdded')) : '').' '.($pa_as_input ? $formCore->texte('', 'TLine['.$k.'][pa]', price($pa), 5,50) : $formCore->hidden('TLine['.$k.'][pa]', $pa).price($pa)).'</td>
-			</tr>';
+				<td align="right">'.($add_warning ? img_warning($langs->trans('WarningThisLineCanNotBeAdded')) : '').' '.($pa_as_input ? $formCore->texte('', 'TLine['.$k.'][pa]', price($pa), 5,50) : $formCore->hidden('TLine['.$k.'][pa]', $pa).price($pa)).'</td>';
+			
+			_showColumnMulticurrency($supplier, $formCore, $pa, $pa_as_input, $k);
+			
+			echo '</tr>';
 			
 			
 			
@@ -262,6 +292,7 @@
 		</table>
 		<div class="tabsAction">
 		<?php	
+		
 		echo $formCore->btsubmit($langs->trans('CreateSupplierOrder'), 'bt_createOrder');
 		
 		?>
@@ -294,4 +325,82 @@
 		
 		dol_fiche_end();
 		llxFooter();
+	}
+
+	/**
+	 * TODO à faire évoluer si on veux une compatibilité avec multicurrency à partir de la 4.0
+	 */
+	function _showTauxMulticurrency(&$supplier)
+	{
+		global $conf,$langs;
+		
+		if (!empty($conf->multidevise->enabled))
+		{
+			$langs->loadCacheCurrencies('');
+			
+			dol_include_once('/multidevise/class/multidevise.class.php');
+			dol_include_once('/propal2supplierorder/lib/propal2supplierorder.lib.php');
+			
+			$PDOdb = new TPDOdb;
+			$c = new TMultideviseClient;
+			$c->load($PDOdb, $supplier->id);
+			
+			if (!empty($c->devise_code))
+			{
+				$TRes = _getcurrencyrate($PDOdb, $c->devise_code);
+				$rate = 1;
+				if (!empty($TRes['currency_rate'])) $rate = $TRes['currency_rate'];
+				
+				$supplier->fk_multicurrency = $c->fk_devise;
+				$supplier->multicurrency_code = $c->devise_code;
+				$supplier->multicurrency_rate = $rate;
+				
+				// TODO à voir si on utilise un $form->select_currency plutot qu'un input avec le taux et d'utiliser la devise du fournisseur
+				echo '<p>
+						<label>'.$langs->trans('propal2supplierorder_devisefourn').'</label> <span>'.$langs->cache_currencies[$c->devise_code]['label'] . ' ('. $langs->getCurrencySymbol($c->devise_code).')</span>
+						<br />
+						<label>'.$langs->trans('propal2supplierorder_txdevisefourn').'</label> <span>'.$rate.'</span>
+						<input type="hidden" name="multicurrency_code" value="'.$c->devise_code.'" />
+						<!-- input currency nécessaire pour le module multidevise -->
+						<input type="hidden" name="currency" value="'.$c->devise_code.'" />
+						<input type="hidden" name="fk_multicurrency" value="'.$c->fk_devise.'" />
+						<input type="hidden" name="multicurrency_tx" data-rate="'.$rate.'" value="'.$rate.'" />
+					</p>';
+					
+				?>
+				<script type="text/javascript">
+					$(function() {
+						var propal2supplierorder_multicurrency_rate = <?php echo (float) $rate; ?>;
+						$("#formventil .multicurrency_input").unbind().change(function(event) {
+							var k = $(this).data('k');
+							var pa = $(this).val() / propal2supplierorder_multicurrency_rate;
+							$("#formventil input[name='TLine["+k+"][pa]']").val(pa);
+						});
+					});
+				</script>
+				<?php
+			}
+			
+		}
+	}
+
+	function _showTitleMulticurrency()
+	{
+		global $conf,$langs;
+		
+		if (!empty($conf->multidevise->enabled))
+		{
+			echo '<td align="right">'.$langs->trans('propal2supplierorder_pa_devisefourn').'</td>';
+		}
+	}
+
+	function _showColumnMulticurrency(&$supplier, &$formCore, $pa, $pa_as_input, $k)
+	{
+		global $conf;
+		
+		if (!empty($conf->multidevise->enabled))
+		{
+			$pa_devise = $pa * $supplier->multicurrency_rate;
+			echo '<td align="right">'.($pa_as_input ? '<input class="multicurrency_input" data-k="'.$k.'" type="text" name="TLine['.$k.'][pa_devise]" value="" placeholder="'.$pa_devise.'" size="8" />' : price($pa_devise)).'</td>';
+		}
 	}

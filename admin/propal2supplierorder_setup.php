@@ -135,6 +135,13 @@ print '<td align="center" width="300">';
 print ajax_constantonoff('PROPAL2SUPPLIERORDER_REDIRECT_ON_CF_IF_EXISTS');
 print '</td></tr>';
 
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("PROPAL2SUPPLIER_TAKE_ORIGIN_TVA").'</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="center" width="300">';
+print ajax_constantonoff('PROPAL2SUPPLIER_TAKE_ORIGIN_TVA');
+print '</td></tr>';
 
 print '</table>';
 
