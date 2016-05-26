@@ -129,10 +129,40 @@ print '</td></tr>';
 
 $var=!$var;
 print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT").'</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="center" width="300">';
+print ajax_constantonoff('PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT');
+print '</td></tr>';
+
+print '<script type="text/javascript">
+	$(function() {
+		$("#set_PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT").click(function(event) {
+			$("#del_PROPAL2SUPPLIERORDER_DISALLOW_IMPORT_LINE_WITH_PRICE_ZERO").trigger("click");
+		});
+		
+		$("#set_PROPAL2SUPPLIERORDER_DISALLOW_IMPORT_LINE_WITH_PRICE_ZERO").click(function(event) {
+			$("#del_PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT").trigger("click");
+		});
+	});
+</script>';
+
+
+$var=!$var;
+print '<tr '.$bc[$var].'>';
 print '<td>'.$langs->trans("PROPAL2SUPPLIERORDER_REDIRECT_ON_CF_IF_EXISTS").'</td>';
 print '<td align="center" width="20">&nbsp;</td>';
 print '<td align="center" width="300">';
 print ajax_constantonoff('PROPAL2SUPPLIERORDER_REDIRECT_ON_CF_IF_EXISTS');
+print '</td></tr>';
+
+
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("PROPAL2SUPPLIERORDER_USE_PU_AS_PA").'</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="center" width="300">';
+print ajax_constantonoff('PROPAL2SUPPLIERORDER_USE_PU_AS_PA');
 print '</td></tr>';
 
 
