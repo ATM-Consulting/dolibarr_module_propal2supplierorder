@@ -18,7 +18,9 @@ WarningThisLineCanNotBeAdded=Attention : cette ligne ne pourra pas être import�
 WarningLineHasNotAdded=Attention ligne non ajoutée : référence produit [%s] avec une quantité de [%s] car hors achat
 
 PROPAL2SUPPLIERORDER_DISALLOW_IMPORT_LINE_WITH_PRICE_ZERO=Refuser la récupération des lignes dont le prix est à 0
+PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT=Des cases à cocher sont disponibles pour indiquer les lignes à récupérer
 PROPAL2SUPPLIERORDER_REDIRECT_ON_CF_IF_EXISTS=Rediriger sur la commande fournisseur, si la référence est déjà existante
+PROPAL2SUPPLIERORDER_USE_PU_AS_PA=Utiliser le PU HT de la ligne en tant que prix d'achat
 PROPAL2SUPPLIER_TAKE_ORIGIN_TVA=Récupérer la TVA de la ligne d'origine
 
 RefSupplierOrderAleadyExists=Référence fournisseur déjà existante

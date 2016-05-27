@@ -79,7 +79,8 @@
 			}
 			
 			$fk_cmd_fourn = $commande_fournisseur->id;
-			foreach($_POST['TLine'] as $k=>$data) 
+			$TLine = GETPOST('TLine');
+			foreach($TLine as $k=>$data) 
 			{
 				$status_buy = 1;
 				$line = $object->lines[$k];
@@ -99,7 +100,8 @@
 
 
 				if (!empty($conf->global->PROPAL2SUPPLIERORDER_DISALLOW_IMPORT_LINE_WITH_PRICE_ZERO) && $pa == 0) continue;
-
+				elseif (!empty($conf->global->PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT) && empty($data['to_import'])) continue;
+				
 				$fourn_ref = '';
 				// On tente de récup un prix pour ce produit, ce fournisseur et cette quantité, sinon on le crée
 				if (!empty($line->fk_product)) 
@@ -230,6 +232,9 @@
 				<td align="right"><?php echo $langs->trans('Qty') ?></td>
 				<td align="right"><?php echo $langs->trans('PA') ?></td>
 				<?php _showTitleMulticurrency(); ?>
+				<?php if ($conf->global->PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT) { ?>
+					<td align="center" class="maxwidthsearch"><?php echo $langs->trans('Import'); ?></td>
+				<?php } ?>
 			</tr>
 		<?php
 		
@@ -239,39 +244,59 @@
 			
 			$pa_as_input = true;
 			
-			if($line->fk_product>0) {
-				$p=new ProductFournisseur($db);
-				$p->fetch($line->fk_product);
+			if (!empty($conf->global->PROPAL2SUPPLIERORDER_USE_PU_AS_PA))
+			{
+				$pa = (double) $line->subprice;
 				
-				$line_pa = !empty($line->pa_ht) ? $line->pa_ht : $line->pa;
-				$line_pa = intval($line_pa);
-		
-				if($line->fk_fournprice>0 && $p->fetch_product_fournisseur_price($line->fk_fournprice)>0) {
-					$pa_as_input = false;
-					$pa = $p->fourn_unitprice;
-
-					echo $formCore->hidden('TLine['.$k.'][fk_fournprice]', $line->fk_fournprice);
+				if($line->fk_product>0)	
+				{
+					$p=new ProductFournisseur($db);
+					$p->fetch($line->fk_product);
+					$product_label=$p->getNomUrl(1);
 				}
-				else if(empty($line_pa)) {
-					$pa = _getPrice($p,$fk_supplier,$line->qty);
+				else
+				{
+					$product_label = $line->desc;
+				}
+			}
+			else
+			{
+				if($line->fk_product>0) {
+					$p=new ProductFournisseur($db);
+					$p->fetch($line->fk_product);
 					
-					$product = new Product($db);
-					$product->fetch($line->fk_product);
-					if (empty($product->status_buy)) $add_warning = true;
+					$line_pa = !empty($line->pa_ht) ? $line->pa_ht : $line->pa;
+					$line_pa = (double) $line_pa;
+			
+					if($line->fk_fournprice>0 && $p->fetch_product_fournisseur_price($line->fk_fournprice)>0) {
+						$pa_as_input = false;
+						$pa = $p->fourn_unitprice;
+	
+						echo $formCore->hidden('TLine['.$k.'][fk_fournprice]', $line->fk_fournprice);
+					}
+					else if(empty($line_pa)) {
+						$pa = _getPrice($p,$fk_supplier,$line->qty);
+						
+						$product = new Product($db);
+						$product->fetch($line->fk_product);
+						if (empty($product->status_buy)) $add_warning = true;
+					}
+					else{
+						$pa = $line_pa;
+						$add_warning = true;
+					}
+					
+					$product_label=$p->getNomUrl(1) .' '.$p->label;
 				}
 				else{
+					$product_label = $line->desc;
 					$pa = $line_pa;
-					$add_warning = true;
 				}
-				
-				$product_label=$p->getNomUrl(1) .' '.$p->label;
 			}
-			else{
-				$product_label = $line->desc;
-				$pa = $line_pa;
-			}
-			
+
 			if (!empty($conf->global->PROPAL2SUPPLIERORDER_DISALLOW_IMPORT_LINE_WITH_PRICE_ZERO) && $pa == 0) $add_warning = true;
+			
+			if (!empty($conf->global->PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT)) $add_warning = false;
 			
 			echo $formCore->hidden('TLine['.$k.'][fk_product]', $line->fk_product);
 			
@@ -282,10 +307,12 @@
 			
 			_showColumnMulticurrency($supplier, $formCore, $pa, $pa_as_input, $k);
 			
+			if ($conf->global->PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT)
+			{
+				echo '<td align="center"><input type="checkbox" name="TLine['.$k.'][to_import]" value="1"/></td>';
+			}
+			
 			echo '</tr>';
-			
-			
-			
 		}
 		
 		?>
