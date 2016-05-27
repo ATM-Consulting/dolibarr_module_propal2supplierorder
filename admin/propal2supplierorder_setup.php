@@ -172,6 +172,14 @@ print '<td align="center" width="300">';
 print ajax_constantonoff('PROPAL2SUPPLIERORDER_USE_PU_AS_PA');
 print '</td></tr>';
 
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("PROPAL2SUPPLIERORDER_SHOW_SUBTOTAL_TITLE").'</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="center" width="300">';
+print ajax_constantonoff('PROPAL2SUPPLIERORDER_SHOW_SUBTOTAL_TITLE');
+print '</td></tr>';
+
 
 print '</table>';
 
