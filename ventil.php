@@ -82,6 +82,11 @@
 			$TLine = GETPOST('TLine');
 			foreach($TLine as $k=>$data) 
 			{
+				// TODO voir si on importe les titres et sous-totaux si la conf PROPAL2SUPPLIERORDER_SHOW_SUBTOTAL_TITLE est active
+				// $data[subtitle] => value = qty
+				// $data[subtitle_desc] => value = desc
+				// $data[subtitle] => value = qty
+				
 				$status_buy = 1;
 				$line = $object->lines[$k];
 				$pa = price2num($data['pa']);
@@ -238,9 +243,36 @@
 			</tr>
 		<?php
 		
+		$nb_nbsp = 0;
 		foreach($object->lines as $k=>&$line) {
 			$add_warning = false;
-			if($line->product_type != 0 && $line->product_type != 1) continue;
+			
+			if ($line->product_type == 9 && !empty($conf->global->PROPAL2SUPPLIERORDER_SHOW_SUBTOTAL_TITLE))
+			{
+				if ($line->qty <= 10 ) 
+				{
+					$nb_nbsp = $line->qty - 1;
+					$label = !empty($line->label) ? $line->label : $line->desc;
+					
+					print '<tr class="title title_level_'.$line->qty.'" style="background-color:#ADADCF;" >';
+					print '<td><b>'.(str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $nb_nbsp)).$label.'</b></td>';
+					print '<td><input type="hidden" name="TLine['.$k.'][subtitle]" value="'.($line->qty).'" /></td>';
+					print '<td><textarea class="hideobject" name="TLine['.$k.'][subtitle_desc]">'.$label.'</textarea></td>';
+					if (!empty($conf->multidevise->enabled)) print '<td></td>';
+					if (!empty($conf->global->PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT)) print '<td align="center"><span style="cursor:pointer;" onclick="checkNextInput(this);">v</span></td>';
+					print '</tr>';
+				}
+				else // sous-total 
+				{
+					print '<tr class="" style="background-color:#cdcdef;">';
+					print '<td>'.(str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', 99 - $line->qty)).$line->desc.' [niveau : '.(100-$line->qty).']</td>';
+					print '<td><input type="hidden" name="TLine['.$k.'][subtotal]" value="'.($line->qty).'" /></td>';
+					print '</tr>';
+				}
+				
+				continue;
+			}
+			elseif($line->product_type != 0 && $line->product_type != 1) continue;
 			
 			$pa_as_input = true;
 			
@@ -298,10 +330,11 @@
 			
 			if (!empty($conf->global->PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT)) $add_warning = false;
 			
+			echo '<tr>';
 			echo $formCore->hidden('TLine['.$k.'][fk_product]', $line->fk_product);
 			
-			echo '<tr>
-				<td>'.$product_label.'</td>
+			echo '
+				<td>'.(str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $nb_nbsp)).$product_label.'</td>
 				<td align="right">'.price($line->qty).'</td>
 				<td align="right" class="td_pa_base">'.($add_warning ? img_warning($langs->trans('WarningThisLineCanNotBeAdded')) : '').' '.($pa_as_input ? $formCore->texte('', 'TLine['.$k.'][pa]', price($pa), 5,50, 'data-k="'.$k.'"') : $formCore->hidden('TLine['.$k.'][pa]', $pa).price($pa)).'</td>';
 			
@@ -309,7 +342,7 @@
 			
 			if ($conf->global->PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT)
 			{
-				echo '<td align="center"><input type="checkbox" name="TLine['.$k.'][to_import]" value="1"/></td>';
+				echo '<td align="center"><input type="checkbox" class="to_import" name="TLine['.$k.'][to_import]" value="1"/></td>';
 			}
 			
 			echo '</tr>';
@@ -325,6 +358,31 @@
 		?>
 		</div>
 		<?php
+		
+		if (!empty($conf->global->PROPAL2SUPPLIERORDER_SHOW_SUBTOTAL_TITLE))
+		{
+			?>
+			<script type="text/javascript">
+				function checkNextInput(span)
+				{
+					var i = 0;
+					var tr = $(span).closest('tr');
+					var cur_tr;
+					while (cur_tr = $(tr).next())
+					{
+						if ($(cur_tr).hasClass('title') || $(cur_tr).length == 0  || $(cur_tr).get(0).tagName != 'TR')
+						{
+							break;
+						}
+						
+						$(cur_tr).find('input.to_import').trigger('click');
+						tr = cur_tr;
+					}
+				}
+			</script>
+			<?php
+		}
+		
 		
 		$formCore->end();
 		
