@@ -126,6 +126,21 @@
 					
 					$res = $commande_fournisseur->addline($line->desc, $pa, $line->qty, $tva, $line->txlocaltax1, $line->txlocaltax2, $line->fk_product, (int)$line->fk_fournprice, $fourn_ref, $line->remise_percent, 'HT', 0.0, $line->product_type, $line->info_bits, false, $line->date_start, $line->date_end, $line->array_options, $line->fk_unit);
 	
+					if(!empty($conf->nomenclature->enabled)) {
+						
+						dol_include_once('/nomenclature/class/nomenclature.class.php');
+						$n=new TNomenclature;
+						$PDOdb = new TPDOdb;
+						$n->loadByObjectId($PDOdb, $data['lineid'], $object_type);
+						if($n->iExist) {
+							$n->reinit();
+							$n->fk_object = $commande_fournisseur->rowid;
+							$n->object_type = $commande_fournisseur->element;
+							$n->save($PDOdb);
+						}
+						
+					}
+	
 					if (!empty($fourn_ref))
 					{
 						$fk_line = $commande_fournisseur->rowid; // [PH] Oui je sais ça semble pas logique, mais la fonction addline de dolibarr stock le fk_line dans le rowid de l'objet
@@ -332,6 +347,7 @@
 			
 			echo '<tr>';
 			echo $formCore->hidden('TLine['.$k.'][fk_product]', $line->fk_product);
+			echo $formCore->hidden('TLine['.$k.'][lineid]', $line->rowid);
 			
 			echo '
 				<td>'.(str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $nb_nbsp)).$product_label.'</td>
