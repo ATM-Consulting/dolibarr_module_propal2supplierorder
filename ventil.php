@@ -19,6 +19,7 @@
 	}
 	
 	if($object->fetch($fk_object)<=0) exit('ImpossibleToLoadObject');
+	$object->fetch_projet();
 	
 	$fk_supplier = GETPOST('fk_supplier');
 	
@@ -69,7 +70,9 @@
 				
 				exit;
 			}
-		
+			
+			$commande_fournisseur->set_id_projet($user, $object->projet->id);
+			
 			if (!empty($conf->multidevise->enabled))
 			{
 				$rate = GETPOST('multicurrency_tx', 'int');
