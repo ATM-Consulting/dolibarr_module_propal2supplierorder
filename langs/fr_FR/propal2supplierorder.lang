@@ -23,6 +23,7 @@ PROPAL2SUPPLIERORDER_REDIRECT_ON_CF_IF_EXISTS=Rediriger sur la commande fourniss
 PROPAL2SUPPLIERORDER_USE_PU_AS_PA=Utiliser le PU HT de la ligne en tant que prix d'achat
 PROPAL2SUPPLIER_TAKE_ORIGIN_TVA=Récupérer la TVA de la ligne d'origine
 PROPAL2SUPPLIERORDER_SHOW_SUBTOTAL_TITLE=Afficher les titres et sous-totaux sur le formulaire d'import
+PROPAL2SUPPLIERORDER_CAN_CREATE_MULTIPLE_SUPPLIER_ORDERS=Permettre de créer plusieurs commandes fournisseurs depuis une même commande client
 
 RefSupplierOrderAleadyExists=Référence fournisseur déjà existante
 

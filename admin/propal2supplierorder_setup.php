@@ -158,6 +158,14 @@ print '</td></tr>';
 
 $var=!$var;
 print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("PROPAL2SUPPLIERORDER_CAN_CREATE_MULTIPLE_SUPPLIER_ORDERS").'</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="center" width="300">';
+print ajax_constantonoff('PROPAL2SUPPLIERORDER_CAN_CREATE_MULTIPLE_SUPPLIER_ORDERS');
+print '</td></tr>';
+
+$var=!$var;
+print '<tr '.$bc[$var].'>';
 print '<td>'.$langs->trans("PROPAL2SUPPLIER_TAKE_ORIGIN_TVA").'</td>';
 print '<td align="center" width="20">&nbsp;</td>';
 print '<td align="center" width="300">';

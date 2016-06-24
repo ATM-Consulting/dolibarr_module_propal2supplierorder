@@ -43,7 +43,7 @@
 		
 		$res = $db->query("SELECT rowid FROM ".MAIN_DB_PREFIX."commande_fournisseur WHERE ref_supplier='".$ref."'");
 		
-		if($obj = $db->fetch_object($res)) 
+		if($obj = $db->fetch_object($res) && !$conf->global->PROPAL2SUPPLIERORDER_CAN_CREATE_MULTIPLE_SUPPLIER_ORDERS) 
 		{
 			$commande_fournisseur->fetch($obj->rowid);
 			setEventMessages('RefSupplierOrderAleadyExists', null, 'warnings');
