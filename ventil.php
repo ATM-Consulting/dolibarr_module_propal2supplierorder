@@ -311,12 +311,12 @@
 			}
 			else
 			{
+				$line_pa = !empty($line->pa_ht) ? $line->pa_ht : $line->pa;
+				$line_pa = (double) $line_pa;
+				
 				if($line->fk_product>0) {
 					$p=new ProductFournisseur($db);
 					$p->fetch($line->fk_product);
-					
-					$line_pa = !empty($line->pa_ht) ? $line->pa_ht : $line->pa;
-					$line_pa = (double) $line_pa;
 			
 					if($line->fk_fournprice>0 && $p->fetch_product_fournisseur_price($line->fk_fournprice)>0) {
 						$pa_as_input = false;
