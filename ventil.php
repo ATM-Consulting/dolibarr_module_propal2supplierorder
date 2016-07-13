@@ -57,9 +57,17 @@
 		}
 		else 
 		{
+			$supplier = new Fournisseur($db);
+			$supplier->fetch($fk_supplier);
+			
 			$commande_fournisseur->socid = $fk_supplier;
 			$commande_fournisseur->ref_supplier = $ref;
 			$commande_fournisseur->linked_objects[$object->element] = $object->id;
+			
+			$commande_fournisseur->cond_reglement_id = $supplier->cond_reglement_supplier_id;
+			$commande_fournisseur->mode_reglement_id = $supplier->mode_reglement_supplier_id;
+			
+			$commande_fournisseur->date_livraison = $object->date_livraison;
 			
 			if($commande_fournisseur->create($user)<=0) 
 			{
