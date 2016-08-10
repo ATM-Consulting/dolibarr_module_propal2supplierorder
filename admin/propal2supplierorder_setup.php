@@ -188,6 +188,14 @@ print '<td align="center" width="300">';
 print ajax_constantonoff('PROPAL2SUPPLIERORDER_SHOW_SUBTOTAL_TITLE');
 print '</td></tr>';
 
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED").'</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="center" width="300">';
+print ajax_constantonoff('PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED');
+print '</td></tr>';
+
 
 print '</table>';
 
