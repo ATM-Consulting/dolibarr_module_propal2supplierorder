@@ -110,7 +110,7 @@
 					}
 					
 					$_REQUEST['dp_pu_devise'] = $pa_devise;
-					$_REQUEST['qty'] = $line->qty;
+					$_REQUEST['qty'] = ($conf->global->PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED) ? $data['qty_to_order'] : $line->qty;
 					$_REQUEST['buying_price'] = $pa;
 				}
 
@@ -261,6 +261,7 @@
 			<tr class="liste_titre">
 				<td><?php echo $langs->trans('Product') ?></td>
 				<td align="right"><?php echo $langs->trans('Qty') ?></td>
+				<?php if($conf->global->PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED){ ?><td align="right"><?php echo $langs->trans('Qté commandé'); ?></td><?php } ?>
 				<td align="right"><?php echo $langs->trans('PA') ?></td>
 				<?php _showTitleMulticurrency(); ?>
 				<?php if ($conf->global->PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT) { ?>
@@ -269,9 +270,26 @@
 			</tr>
 		<?php
 		
+		//Récupération de toutes les commandes fournisseurs déjà faites pour cet élément
+		if($conf->global->PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED){
+			$object->fetchObjectLinked();
+			$TCommandeFourn = $object->linkedObjects['order_supplier'];
+		}
+		
 		$nb_nbsp = 0;
 		foreach($object->lines as $k=>&$line) {
 			$add_warning = false;
+			$line->qty_already_ordered = 0;
+			
+			if($conf->global->PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED && !empty($TCommandeFourn)){
+				foreach($TCommandeFourn as $commandeFourn){
+					foreach ($commandeFourn->lines as $linefourn) {
+						if($linefourn->fk_product == $line->fk_product){
+							$line->qty_already_ordered += $linefourn->qty;
+						}
+					}
+				}
+			}
 			
 			if ($line->product_type == 9 && !empty($conf->global->PROPAL2SUPPLIERORDER_SHOW_SUBTOTAL_TITLE))
 			{
@@ -359,16 +377,29 @@
 			echo '<tr>';
 			echo $formCore->hidden('TLine['.$k.'][fk_product]', $line->fk_product);
 			echo $formCore->hidden('TLine['.$k.'][lineid]', $line->rowid);
-			
+			if($conf->global->PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED){
+				echo $formCore->hidden('TLine['.$k.'][qty_to_order]', $line->qty - $line->qty_already_ordered);
+			}
+
 			echo '
 				<td>'.(str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $nb_nbsp)).$product_label.'</td>
-				<td align="right">'.price($line->qty).'</td>
-				<td align="right" class="td_pa_base">'.($add_warning ? img_warning($langs->trans('WarningThisLineCanNotBeAdded')) : '').' '.($pa_as_input ? $formCore->texte('', 'TLine['.$k.'][pa]', price($pa), 5,50, 'data-k="'.$k.'"') : $formCore->hidden('TLine['.$k.'][pa]', $pa).price($pa)).'</td>';
+				<td align="right">'.price($line->qty).'</td>';
+			if($conf->global->PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED){
+				echo '<td align="right">'.price($line->qty_already_ordered).'</td>';
+			}
+			
+			if($conf->global->PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED && ($line->qty - $line->qty_already_ordered) <= 0){
+				echo '<td align="right" class="td_pa_base">'.price($pa).'</td>';
+			}
+			else{
+				echo '<td align="right" class="td_pa_base">'.($add_warning ? img_warning($langs->trans('WarningThisLineCanNotBeAdded')) : '').' '.($pa_as_input ? $formCore->texte('', 'TLine['.$k.'][pa]', price($pa), 5,50, 'data-k="'.$k.'"') : $formCore->hidden('TLine['.$k.'][pa]', $pa).price($pa)).'</td>';
+			}
 			
 			_showColumnMulticurrency($supplier, $formCore, $pa, $pa_as_input, $k);
 			
 			if ($conf->global->PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT)
 			{
+				if(($line->qty - $line->qty_already_ordered) > 0)
 				echo '<td align="center"><input type="checkbox" class="to_import" name="TLine['.$k.'][to_import]" value="1"/></td>';
 			}
 			
