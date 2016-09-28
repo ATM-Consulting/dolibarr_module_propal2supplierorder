@@ -33,14 +33,15 @@
 	function _create_order($fk_supplier,&$object,$fk_object,$object_type) 
 	{
 		global $conf,$user,$db,$langs;
-		
+
 		dol_include_once('/fourn/class/fournisseur.commande.class.php');
 		
+		$dol_version = (float) DOL_VERSION;
 		$TError = array();
-		
+
 		$commande_fournisseur = new CommandeFournisseur($db);
 		$ref = 'CF'.$object->ref;
-		
+
 		$res = $db->query("SELECT rowid FROM ".MAIN_DB_PREFIX."commande_fournisseur WHERE ref_supplier='".$ref."'");
 		
 		if($obj = $db->fetch_object($res) && !$conf->global->PROPAL2SUPPLIERORDER_CAN_CREATE_MULTIPLE_SUPPLIER_ORDERS) 
@@ -78,7 +79,16 @@
 				
 				exit;
 			}
-			
+	
+			$TContact = array_merge($object->liste_contact(-1, 'external', 0), $object->liste_contact(-1, 'internal', 0));
+			if (!empty($TContact))
+			{
+				foreach ($TContact as &$Tab)
+				{
+					$commande_fournisseur->add_contact($Tab['id'], $Tab['code'], $Tab['source']);
+				}
+			}
+
 			$commande_fournisseur->set_id_projet($user, $object->projet->id);
 			
 			if (!empty($conf->multidevise->enabled))
@@ -88,7 +98,7 @@
 				// TODO voir si on fait un UPDATE du taux de devise, car le module à dû inserer en base le taux associé au code 
 				// (update uniquement si le taux est modifiable sur le fomulaire)
 			}
-			
+	
 			$fk_cmd_fourn = $commande_fournisseur->id;
 			$TLine = GETPOST('TLine');
 			foreach($TLine as $k=>$data) 
@@ -137,6 +147,20 @@
 					
 					$res = $commande_fournisseur->addline($line->desc, $pa, $line->qty, $tva, $line->txlocaltax1, $line->txlocaltax2, $line->fk_product, (int)$line->fk_fournprice, $fourn_ref, $line->remise_percent, 'HT', 0.0, $line->product_type, $line->info_bits, false, $line->date_start, $line->date_end, $line->array_options, $line->fk_unit);
 	
+	
+	
+	
+					if ($dol_version >= 5.0) $commandedet_id = $res;
+					else if ($dol_version == 4.0)
+					{
+						// TODO marche pas la version 4.0 est fucked
+						$commandedet_id = $db->last_insert_id(MAIN_DB_PREFIX.'commande_fournisseurdet');
+					}
+					else
+					{
+						$commandedet_id = $commande_fournisseur->rowid; // [PH] Oui je sais ça semble pas logique, mais la fonction addline de dolibarr stock le fk_line dans le rowid de l'objet
+					}
+					
 					if(!empty($conf->nomenclature->enabled)) {
 						
 						dol_include_once('/nomenclature/class/nomenclature.class.php');
@@ -145,7 +169,7 @@
 						$n->loadByObjectId($PDOdb, $data['lineid'], $object_type);
 						if($n->iExist) {
 							$n->reinit();
-							$n->fk_object = $commande_fournisseur->rowid;
+							$n->fk_object = $commandedet_id;
 							$n->object_type = $commande_fournisseur->element;
 							$n->save($PDOdb);
 						}
@@ -154,8 +178,11 @@
 	
 					if (!empty($fourn_ref))
 					{
-						$fk_line = $commande_fournisseur->rowid; // [PH] Oui je sais ça semble pas logique, mais la fonction addline de dolibarr stock le fk_line dans le rowid de l'objet
-						$commande_fournisseur->updateline($fk_line, $line->desc, $pa, $line->qty, $line->remise_percent, $tva); 
+						
+						
+						$commande_fournisseur->updateline($commandedet_id, $line->desc, $pa, $line->qty, $line->remise_percent, $tva);
+						
+						
 					}	
 				}
 				else {
