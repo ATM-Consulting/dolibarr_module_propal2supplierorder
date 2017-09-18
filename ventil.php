@@ -70,6 +70,13 @@
 			
 			$commande_fournisseur->date_livraison = $object->date_livraison;
 			
+			if (!empty($conf->multicurrency->enabled))
+			{
+				$commande_fournisseur->fk_multicurrency = GETPOST('fk_multicurrency');
+				$commande_fournisseur->multicurrency_tx = GETPOST('multicurrency_tx');
+				$commande_fournisseur->multicurrency_code = GETPOST('multicurrency_code');
+			}
+			
 			if($commande_fournisseur->create($user)<=0) 
 			{
 				setEventMessages('ErrorCommandFournCreate', null, 'errors');
@@ -534,7 +541,9 @@
 				
 				if (!empty($conf->multicurrency->enabled))
 				{
-					$rate = MultiCurrency::getIdFromCode($db, $multicurrency_code);
+					$multicurrency = new MultiCurrency($db);
+					$multicurrency->fetch($fk_multicurrency);
+					$rate = $multicurrency->rate->rate;
 					if ($rate <= 0) $rate = 1;
 				}
 				else // multidevise (ancien module)
