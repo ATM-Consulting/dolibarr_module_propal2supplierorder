@@ -70,6 +70,13 @@
 			
 			$commande_fournisseur->date_livraison = $object->date_livraison;
 			
+			if (!empty($conf->multicurrency->enabled))
+			{
+				$commande_fournisseur->fk_multicurrency = GETPOST('fk_multicurrency');
+				$commande_fournisseur->multicurrency_tx = GETPOST('multicurrency_tx');
+				$commande_fournisseur->multicurrency_code = GETPOST('multicurrency_code');
+			}
+			
 			if($commande_fournisseur->create($user)<=0) 
 			{
 				setEventMessages('ErrorCommandFournCreate', null, 'errors');
@@ -91,7 +98,7 @@
 
 			$commande_fournisseur->set_id_projet($user, $object->projet->id);
 			
-			if (!empty($conf->multidevise->enabled))
+			if (!empty($conf->multidevise->enabled) || !empty($conf->multicurrency->enabled))
 			{
 				$rate = GETPOST('multicurrency_tx', 'int');
 				if (empty($rate)) $rate = 1;
@@ -111,7 +118,7 @@
 				$status_buy = 1;
 				$line = $object->lines[$k];
 				$pa = price2num($data['pa']);
-				if (!empty($conf->multidevise->enabled))
+				if (!empty($conf->multidevise->enabled) || !empty($conf->multicurrency->enabled))
 				{
 					$pa_devise = price2num($data['pa_devise']);
 					if (!empty($pa_devise))
@@ -329,7 +336,7 @@
 					print '<td><b>'.(str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $nb_nbsp)).$label.'</b></td>';
 					print '<td><input type="hidden" name="TLine['.$k.'][subtitle]" value="'.($line->qty).'" /></td>';
 					print '<td><textarea class="hideobject" name="TLine['.$k.'][subtitle_desc]">'.$label.'</textarea></td>';
-					if (!empty($conf->multidevise->enabled)) print '<td></td>';
+					if (!empty($conf->multidevise->enabled) || !empty($conf->multicurrency->enabled)) print '<td></td>';
 					if (!empty($conf->global->PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT)) print '<td align="center"><span style="cursor:pointer;" onclick="checkNextInput(this);">v</span></td>';
 					print '</tr>';
 				}
@@ -502,38 +509,62 @@
 	 */
 	function _showTauxMulticurrency(&$supplier)
 	{
-		global $conf,$langs;
+		global $conf,$langs,$db;
 		
-		if (!empty($conf->multidevise->enabled))
+		if (!empty($conf->multidevise->enabled) || !empty($conf->multicurrency->enabled))
 		{
 			$langs->loadCacheCurrencies('');
 			
-			dol_include_once('/multidevise/class/multidevise.class.php');
-			dol_include_once('/propal2supplierorder/lib/propal2supplierorder.lib.php');
-			
-			$PDOdb = new TPDOdb;
-			$c = new TMultideviseClient;
-			$c->load($PDOdb, $supplier->id);
-			
-			if (!empty($c->devise_code))
+			if (!empty($conf->multicurrency->enabled))
 			{
-				$TRes = _getcurrencyrate($PDOdb, $c->devise_code);
-				$rate = 1;
-				if (!empty($TRes['currency_rate'])) $rate = $TRes['currency_rate'];
+				include_once DOL_DOCUMENT_ROOT.'/multicurrency/class/multicurrency.class.php';
+				$multicurrency_code = $supplier->multicurrency_code;
+				$fk_multicurrency = $supplier->fk_multicurrency;
+			}
+			else // multidevise (ancien module)
+			{
+				dol_include_once('/multidevise/class/multidevise.class.php');
+				dol_include_once('/propal2supplierorder/lib/propal2supplierorder.lib.php');
+
+				$PDOdb = new TPDOdb;
+				$c = new TMultideviseClient;
+				$c->load($PDOdb, $supplier->id);
 				
-				$supplier->fk_multicurrency = $c->fk_devise;
-				$supplier->multicurrency_code = $c->devise_code;
+				$multicurrency_code = $c->devise_code;
+				$fk_multicurrency = $c->fk_devise;
+			}
+			
+			
+			if (!empty($multicurrency_code))
+			{
+				$rate = 1;
+				
+				if (!empty($conf->multicurrency->enabled))
+				{
+					$multicurrency = new MultiCurrency($db);
+					$multicurrency->fetch($fk_multicurrency);
+					$rate = $multicurrency->rate->rate;
+					if ($rate <= 0) $rate = 1;
+				}
+				else // multidevise (ancien module)
+				{
+					$TRes = _getcurrencyrate($PDOdb, $multicurrency_code);
+					if (!empty($TRes['currency_rate'])) $rate = $TRes['currency_rate'];
+				}
+				
+				$supplier->fk_multicurrency = $fk_multicurrency;
+				$supplier->multicurrency_code = $multicurrency_code;
 				$supplier->multicurrency_rate = $rate;
 				
 				// TODO à voir si on utilise un $form->select_currency plutot qu'un input avec le taux et d'utiliser la devise du fournisseur
 				echo '<p>
-						<label>'.$langs->trans('propal2supplierorder_devisefourn').'</label> <span>'.$langs->cache_currencies[$c->devise_code]['label'] . ' ('. $langs->getCurrencySymbol($c->devise_code).')</span>
+						<label>'.$langs->trans('propal2supplierorder_devisefourn').'</label> <span>'.$langs->cache_currencies[$multicurrency_code]['label'] . ' ('. $langs->getCurrencySymbol($multicurrency_code).')</span>
 						<br />
 						<label>'.$langs->trans('propal2supplierorder_txdevisefourn').'</label> <span>'.$rate.'</span>
-						<input type="hidden" name="multicurrency_code" value="'.$c->devise_code.'" />
+						<input type="hidden" name="multicurrency_code" value="'.$multicurrency_code.'" />
 						<!-- input currency nécessaire pour le module multidevise -->
-						<input type="hidden" name="currency" value="'.$c->devise_code.'" />
-						<input type="hidden" name="fk_multicurrency" value="'.$c->fk_devise.'" />
+						<input type="hidden" name="currency" value="'.$multicurrency_code.'" />
+						<input type="hidden" name="fk_multicurrency" value="'.$fk_multicurrency.'" />
 						<input type="hidden" name="multicurrency_tx" data-rate="'.$rate.'" value="'.$rate.'" />
 					</p>';
 					
@@ -564,7 +595,7 @@
 	{
 		global $conf,$langs;
 		
-		if (!empty($conf->multidevise->enabled))
+		if (!empty($conf->multidevise->enabled) || !empty($conf->multicurrency->enabled))
 		{
 			echo '<td align="right">'.$langs->trans('propal2supplierorder_pa_devisefourn').'</td>';
 		}
@@ -574,7 +605,7 @@
 	{
 		global $conf;
 		
-		if (!empty($conf->multidevise->enabled))
+		if (!empty($conf->multidevise->enabled) || !empty($conf->multicurrency->enabled))
 		{
 			$pa_devise = $pa * $supplier->multicurrency_rate;
 			echo '<td align="right">'.($pa_as_input ? '<input class="multicurrency_input" data-k="'.$k.'" type="text" name="TLine['.$k.'][pa_devise]" value="'.$pa_devise.'" size="8" />' : price($pa_devise)).'</td>';
