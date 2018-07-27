@@ -426,7 +426,7 @@
 				echo '<td align="right" class="td_pa_base">'.price($pa).'</td>';
 			}
 			else{
-				echo '<td align="right" class="td_pa_base">'.($add_warning ? img_warning($langs->trans('WarningThisLineCanNotBeAdded')) : '').' '.($pa_as_input ? $formCore->texte('', 'TLine['.$k.'][pa]', price($pa), 5,50, 'data-k="'.$k.'"') : $formCore->hidden('TLine['.$k.'][pa]', $pa).price($pa)).'</td>';
+				echo '<td align="right" class="td_pa_base">'.($add_warning ? img_warning($langs->trans('WarningThisLineCanNotBeAdded')) : '').' '.($pa_as_input ? $formCore->texte('', 'TLine['.$k.'][pa]', $pa, 5,50, 'data-k="'.$k.'"') : $formCore->hidden('TLine['.$k.'][pa]', $pa).price($pa)).'</td>';
 			}
 			
 			_showColumnMulticurrency($supplier, $formCore, $pa, $pa_as_input, $k);
@@ -574,13 +574,13 @@
 						var propal2supplierorder_multicurrency_rate = <?php echo (float) $rate; ?>;
 						$("#formventil .multicurrency_input").unbind().change(function(event) {
 							var k = $(this).data('k');
-							var pa = $(this).val() / propal2supplierorder_multicurrency_rate;
+							var pa = $(this).val().replace(',', '.') / propal2supplierorder_multicurrency_rate;
 							$("#formventil input[name='TLine["+k+"][pa]']").val(pa);
 						});
 						
 						$("#formventil .td_pa_base input").unbind().change(function(event) {
 							var k = $(this).data('k');
-							var pa_devise = $(this).val() * propal2supplierorder_multicurrency_rate;
+							var pa_devise = $(this).val().replace(',', '.') * propal2supplierorder_multicurrency_rate;
 							$("#formventil input[name='TLine["+k+"][pa_devise]']").val(pa_devise);
 						});
 					});
