@@ -52,6 +52,7 @@
 			//TODO peut être une redirection sur la commande fourn (on à l'objet chargé juste au dessus)
 			if (!empty($conf->global->PROPAL2SUPPLIERORDER_REDIRECT_ON_CF_IF_EXISTS)) header('Location:'.dol_buildpath('/fourn/commande/card.php?id='.$commande_fournisseur->id,1));
 			elseif ($object_type == 'commande') header('Location:'.dol_buildpath('/commande/card.php?id='.$object->id,1));
+			elseif((float) DOL_VERSION >= 3.8) header('Location:'.dol_buildpath('/comm/propal/card.php?id='.$object->id,1));
 			else header('Location:'.dol_buildpath('/comm/propal.php?id='.$object->id,1));
 			
 			exit;
@@ -82,6 +83,7 @@
 				setEventMessages('ErrorCommandFournCreate', null, 'errors');
 				
 				if ($object_type == 'commande') header('Location:'.dol_buildpath('/commande/card.php?id='.$object->id,1));
+				elseif((float) DOL_VERSION >= 3.8) header('Location:'.dol_buildpath('/comm/propal/card.php?id='.$object->id,1));
 				else header('Location:'.dol_buildpath('/comm/propal.php?id='.$object->id,1));
 				
 				exit;
