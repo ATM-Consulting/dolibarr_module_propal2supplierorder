@@ -59,7 +59,7 @@ if (preg_match('/set_(.*)/',$action,$reg))
 		dol_print_error($db);
 	}
 }
-	
+
 if (preg_match('/del_(.*)/',$action,$reg))
 {
 	$code=$reg[1];
@@ -112,7 +112,7 @@ print '<td>'.$langs->trans("set_PROPAL2SUPPLIERORDER_TYPE_DOC").'</td>';
 print '<td align="center" width="20">&nbsp;</td>';
 print '<td align="right" width="300">';
 print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+print '<input type="hidden" name="token" value="'.newToken().'">';
 print '<input type="hidden" name="action" value="set_PROPAL2SUPPLIERORDER_TYPE_DOC">';
 print $form->selectarray('PROPAL2SUPPLIERORDER_TYPE_DOC', array('propal'=>$langs->trans('Proposal'),'order'=>$langs->trans('Order'),'both'=>$langs->trans('Both')), $conf->global->PROPAL2SUPPLIERORDER_TYPE_DOC);
 print '<input type="submit" class="button" value="'.$langs->trans("Modify").'">';
@@ -140,7 +140,7 @@ print '<script type="text/javascript">
 		$("#set_PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT").click(function(event) {
 			$("#del_PROPAL2SUPPLIERORDER_DISALLOW_IMPORT_LINE_WITH_PRICE_ZERO").trigger("click");
 		});
-		
+
 		$("#set_PROPAL2SUPPLIERORDER_DISALLOW_IMPORT_LINE_WITH_PRICE_ZERO").click(function(event) {
 			$("#del_PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT").trigger("click");
 		});
