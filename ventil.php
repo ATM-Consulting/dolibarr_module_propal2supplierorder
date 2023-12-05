@@ -44,7 +44,7 @@
 
 		$res = $db->query("SELECT rowid FROM ".MAIN_DB_PREFIX."commande_fournisseur WHERE ref_supplier='".$ref."'");
 
-		if($db->num_rows($res) > 0 && !$conf->global->PROPAL2SUPPLIERORDER_CAN_CREATE_MULTIPLE_SUPPLIER_ORDERS)
+		if($db->num_rows($res) > 0 && !getDolGlobalString('PROPAL2SUPPLIERORDER_CAN_CREATE_MULTIPLE_SUPPLIER_ORDERS'))
 		{
 			$obj = $db->fetch_object($res);
 
@@ -52,7 +52,7 @@
 			setEventMessages('RefSupplierOrderAleadyExists', null, 'warnings');
 
 			//TODO peut être une redirection sur la commande fourn (on à l'objet chargé juste au dessus)
-			if (!empty($conf->global->PROPAL2SUPPLIERORDER_REDIRECT_ON_CF_IF_EXISTS)) {
+			if (getDolGlobalString('PROPAL2SUPPLIERORDER_REDIRECT_ON_CF_IF_EXISTS')) {
 				header('Location:'.dol_buildpath('/fourn/commande/card.php?id='.$commande_fournisseur->id,1));
 			}
 			elseif ($object_type == 'commande') header('Location:'.dol_buildpath('/commande/card.php?id='.$object->id,1));
@@ -73,7 +73,7 @@
 			$commande_fournisseur->cond_reglement_id = $supplier->cond_reglement_supplier_id;
 			$commande_fournisseur->mode_reglement_id = $supplier->mode_reglement_supplier_id;
 
-			$commande_fournisseur->date_livraison = $object->date_livraison;
+			$commande_fournisseur->delivery_date = $object->delivery_date;
 
 			if (!empty($conf->multicurrency->enabled))
 			{
@@ -133,13 +133,13 @@
 					}
 
 					$_REQUEST['dp_pu_devise'] = $pa_devise;
-					$_REQUEST['qty'] = ($conf->global->PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED) ? $data['qty_to_order'] : $line->qty;
+					$_REQUEST['qty'] = (getDolGlobalString('PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED')) ? $data['qty_to_order'] : $line->qty;
 					$_REQUEST['buying_price'] = $pa;
 				}
 
 
-				if (!empty($conf->global->PROPAL2SUPPLIERORDER_DISALLOW_IMPORT_LINE_WITH_PRICE_ZERO) && $pa == 0) continue;
-				elseif (!empty($conf->global->PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT) && empty($data['to_import'])) continue;
+				if (getDolGlobalString('PROPAL2SUPPLIERORDER_DISALLOW_IMPORT_LINE_WITH_PRICE_ZERO') && $pa == 0) continue;
+				elseif (getDolGlobalString('PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT') && empty($data['to_import'])) continue;
 
 				$fourn_ref = '';
 				// On tente de récup un prix pour ce produit, ce fournisseur et cette quantité, sinon on le crée
@@ -156,7 +156,7 @@
 					if(empty($fourn_ref)) $fourn_ref = _createTarifFourn($fk_supplier, $line->fk_product, $fourn_ref, $line->qty, $data['pa'], $line->product_ref);
 
 					$tva = 0;
-					if (!empty($conf->global->PROPAL2SUPPLIER_TAKE_ORIGIN_TVA)) $tva = $line->tva_tx;
+					if (getDolGlobalString('PROPAL2SUPPLIER_TAKE_ORIGIN_TVA')) $tva = $line->tva_tx;
 
 					$res = $commande_fournisseur->addline($line->desc, $pa, $line->qty, $tva, $line->txlocaltax1, $line->txlocaltax2, $line->fk_product, (int)$line->fk_fournprice, $fourn_ref, $line->remise_percent, 'HT', 0.0, $line->product_type, $line->info_bits, false, $line->date_start, $line->date_end, $line->array_options, $line->fk_unit);
 
@@ -301,17 +301,17 @@
 			<tr class="liste_titre">
 				<td><?php echo $langs->trans('Product') ?></td>
 				<td align="right"><?php echo $langs->trans('Qty') ?></td>
-				<?php if($conf->global->PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED){ ?><td align="right"><?php echo $langs->trans('Qté commandé'); ?></td><?php } ?>
+				<?php if(getDolGlobalString('PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED')){ ?><td align="right"><?php echo $langs->trans('Qté commandé'); ?></td><?php } ?>
 				<td align="right"><?php echo $langs->trans('PA') ?></td>
 				<?php _showTitleMulticurrency(); ?>
-				<?php if ($conf->global->PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT) { ?>
+				<?php if (getDolGlobalString('PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT')) { ?>
 					<td align="center" class="maxwidthsearch"><?php echo $langs->trans('Import'); ?></td>
 				<?php } ?>
 			</tr>
 		<?php
 
 		//Récupération de toutes les commandes fournisseurs déjà faites pour cet élément
-		if($conf->global->PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED){
+		if(getDolGlobalString('PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED')){
 			$object->fetchObjectLinked();
 			$TCommandeFourn = $object->linkedObjects['order_supplier'];
 		}
@@ -321,7 +321,7 @@
 			$add_warning = false;
 			$line->qty_already_ordered = 0;
 
-			if($conf->global->PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED && !empty($TCommandeFourn)){
+			if(getDolGlobalString('PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED')  && !empty($TCommandeFourn)){
 				foreach($TCommandeFourn as $commandeFourn){
 					foreach ($commandeFourn->lines as $linefourn) {
 						if($linefourn->fk_product == $line->fk_product){
@@ -331,7 +331,7 @@
 				}
 			}
 
-			if ($line->product_type == 9 && !empty($conf->global->PROPAL2SUPPLIERORDER_SHOW_SUBTOTAL_TITLE))
+			if ($line->product_type == 9 && getDolGlobalString('PROPAL2SUPPLIERORDER_SHOW_SUBTOTAL_TITLE'))
 			{
 				if ($line->qty <= 10 )
 				{
@@ -343,7 +343,7 @@
 					print '<td><input type="hidden" name="TLine['.$k.'][subtitle]" value="'.($line->qty).'" /></td>';
 					print '<td><textarea class="hideobject" name="TLine['.$k.'][subtitle_desc]">'.$label.'</textarea></td>';
 					if (!empty($conf->multidevise->enabled) || !empty($conf->multicurrency->enabled)) print '<td></td>';
-					if (!empty($conf->global->PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT)) print '<td align="center"><span style="cursor:pointer;" onclick="checkNextInput(this);">v</span></td>';
+					if (getDolGlobalString('PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT')) print '<td align="center"><span style="cursor:pointer;" onclick="checkNextInput(this);">v</span></td>';
 					print '</tr>';
 				}
 				else // sous-total
@@ -360,7 +360,7 @@
 
 			$pa_as_input = true;
 
-			if (!empty($conf->global->PROPAL2SUPPLIERORDER_USE_PU_AS_PA))
+			if (getDolGlobalString('PROPAL2SUPPLIERORDER_USE_PU_AS_PA'))
 			{
 				$pa = (double) $line->subprice;
 
@@ -410,25 +410,25 @@
 				}
 			}
 
-			if (!empty($conf->global->PROPAL2SUPPLIERORDER_DISALLOW_IMPORT_LINE_WITH_PRICE_ZERO) && $pa == 0) $add_warning = true;
+			if (getDolGlobalString('PROPAL2SUPPLIERORDER_DISALLOW_IMPORT_LINE_WITH_PRICE_ZERO') && $pa == 0) $add_warning = true;
 
-			if (!empty($conf->global->PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT)) $add_warning = false;
+			if (getDolGlobalString('PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT')) $add_warning = false;
 
 			echo '<tr>';
 			echo $formCore->hidden('TLine['.$k.'][fk_product]', $line->fk_product);
 			echo $formCore->hidden('TLine['.$k.'][lineid]', $line->rowid);
-			if($conf->global->PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED){
+			if( getDolGlobalString('PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED')){
 				echo $formCore->hidden('TLine['.$k.'][qty_to_order]', $line->qty - $line->qty_already_ordered);
 			}
 
 			echo '
 				<td>'.(str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $nb_nbsp)).$product_label.'</td>
 				<td align="right">'.price($line->qty).'</td>';
-			if($conf->global->PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED){
+			if(getDolGlobalString('PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED') ){
 				echo '<td align="right">'.price($line->qty_already_ordered).'</td>';
 			}
 
-			if($conf->global->PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED && ($line->qty - $line->qty_already_ordered) <= 0){
+			if(getDolGlobalString('PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED')  && ($line->qty - $line->qty_already_ordered) <= 0){
 				echo '<td align="right" class="td_pa_base">'.price($pa).'</td>';
 			}
 			else{
@@ -437,7 +437,7 @@
 
 			_showColumnMulticurrency($supplier, $formCore, $pa, $pa_as_input, $k);
 
-			if ($conf->global->PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT)
+			if (getDolGlobalString('PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT') )
 			{
 				if(($line->qty - $line->qty_already_ordered) > 0)
 				echo '<td align="center"><input type="checkbox" class="to_import" name="TLine['.$k.'][to_import]" value="1"/></td>';
@@ -457,7 +457,7 @@
 		</div>
 		<?php
 
-		if (!empty($conf->global->PROPAL2SUPPLIERORDER_SHOW_SUBTOTAL_TITLE))
+		if (getDolGlobalString('PROPAL2SUPPLIERORDER_SHOW_SUBTOTAL_TITLE'))
 		{
 			?>
 			<script type="text/javascript">

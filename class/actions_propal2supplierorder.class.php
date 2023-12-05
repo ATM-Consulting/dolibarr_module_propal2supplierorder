@@ -22,11 +22,12 @@
  * \brief   This file is an example hook overload class file
  *          Put some comments here
  */
+require_once __DIR__ . '/../backport/v19/core/class/commonhookactions.class.php';
 
 /**
  * Class ActionsPropal2SupplierOrder
  */
-class ActionsPropal2SupplierOrder
+class ActionsPropal2SupplierOrder extends \propal2supplierorder\RetroCompatCommonHookActions
 {
 	/**
 	 * @var array Hook results. Propagated to $hookmanager->resArray for later reuse
@@ -68,9 +69,9 @@ class ActionsPropal2SupplierOrder
 		
 		if (in_array('propalcard', explode(':', $parameters['context'])))
 		{
-			if($object->statut !=0 && !empty($object->lines) && $user->rights->fournisseur->facture->creer)
-			{
-				if ($conf->global->PROPAL2SUPPLIERORDER_TYPE_DOC == 'propal' || $conf->global->PROPAL2SUPPLIERORDER_TYPE_DOC == 'both')
+			if($object->statut !=0 && !empty($object->lines) && $user->hasRight('fournisseur', 'facture', 'creer'))
+				{
+				if (getDolGlobalString('PROPAL2SUPPLIERORDER_TYPE_DOC') == 'propal' || getDolGlobalString('PROPAL2SUPPLIERORDER_TYPE_DOC') == 'both')
 				{
 					print '
 						<div class="inline-block divButAction">
@@ -82,9 +83,9 @@ class ActionsPropal2SupplierOrder
 		}
 		elseif (in_array('ordercard', explode(':', $parameters['context'])))
 		{
-			if($object->statut !=0 && !empty($object->lines) && $user->rights->fournisseur->facture->creer)
+			if($object->statut !=0 && !empty($object->lines) && $user->hasRight('fournisseur', 'facture', 'creer'))
 			{
-				if ($conf->global->PROPAL2SUPPLIERORDER_TYPE_DOC == 'order' || $conf->global->PROPAL2SUPPLIERORDER_TYPE_DOC == 'both')
+				if (getDolGlobalString('PROPAL2SUPPLIERORDER_TYPE_DOC') == 'order' || getDolGlobalString('PROPAL2SUPPLIERORDER_TYPE_DOC') == 'both')
 				{
 					print '
 						<div class="inline-block divButAction">
