@@ -5,6 +5,8 @@
 	dol_include_once('/comm/propal/class/propal.class.php');
 	dol_include_once('/commande/class/commande.class.php');
 	dol_include_once('/fourn/class/fournisseur.product.class.php');
+    require_once __DIR__ . '../../subtotal/class/subtotal.class.php';
+
 
 	$langs->load('propal2supplierorder@propal2supplierorder');
 
@@ -114,21 +116,28 @@
 
 			$fk_cmd_fourn = $commande_fournisseur->id;
 			$TLine = GETPOST('TLine');
-			foreach($TLine as $k=>$data)
-			{
-				// TODO voir si on importe les titres et sous-totaux si la conf PROPAL2SUPPLIERORDER_SHOW_SUBTOTAL_TITLE est active
-				// $data[subtitle] => value = qty
-				// $data[subtitle_desc] => value = desc
-				// $data[subtitle] => value = qty
-
+			foreach($TLine as $k=>$data) {
 				$status_buy = 1;
 				$line = $object->lines[$k];
+				if (getDolGlobalString('PROPAL2SUPPLIERORDER_SHOW_SUBTOTAL_TITLE')) { // Importation des titres sous total
+					if ($data['subtotal'] == '50') { // ligne de texte sous total
+						Tsubtotal::addSubTotalLine($commande_fournisseur, $line->desc, $line->qty);
+						continue;
+					}
+                    if (!empty($data['subtitle_desc'])) { // ligne de Titre sous total
+						Tsubtotal::addTitle($commande_fournisseur, $data['subtitle_desc'], $line->qty);
+						continue;
+					}
+					if ($data['subtotal'] == '99') { // ligne de sous total
+						Tsubtotal::addSubTotalLine($commande_fournisseur, $line->label, $line->qty);
+                        continue;
+					}
+				}
+
 				$pa = price2num($data['pa']);
-				if (!empty($conf->multidevise->enabled) || !empty($conf->multicurrency->enabled))
-				{
+				if (! empty($conf->multidevise->enabled) || ! empty($conf->multicurrency->enabled)) {
 					$pa_devise = price2num($data['pa_devise']);
-					if (!empty($pa_devise))
-					{
+					if (! empty($pa_devise)) {
 						$pa = $pa_devise / $rate;
 					}
 
@@ -137,78 +146,63 @@
 					$_REQUEST['buying_price'] = $pa;
 				}
 
-
 				if (getDolGlobalString('PROPAL2SUPPLIERORDER_DISALLOW_IMPORT_LINE_WITH_PRICE_ZERO') && $pa == 0) continue;
-				elseif (getDolGlobalString('PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT') && empty($data['to_import'])) continue;
+                elseif (getDolGlobalString('PROPAL2SUPPLIERORDER_SELECT_LINE_TO_IMPORT') && empty($data['to_import'])) continue;
 
 				$fourn_ref = '';
 				// On tente de récup un prix pour ce produit, ce fournisseur et cette quantité, sinon on le crée
-				if (!empty($line->fk_product))
-				{
+				if (! empty($line->fk_product)) {
 					$product = new Product($db);
 					$product->fetch($line->fk_product);
 					$status_buy = $product->status_buy;
-					if (!empty($status_buy)) $fourn_ref = _getFournRef($db, $line, $commande_fournisseur->socid);
+					if (! empty($status_buy)) $fourn_ref = _getFournRef($db, $line, $commande_fournisseur->socid);
 				}
 
-				if ($status_buy)
-				{
-					if(empty($fourn_ref)) $fourn_ref = _createTarifFourn($fk_supplier, $line->fk_product, $fourn_ref, $line->qty, $data['pa'], $line->product_ref);
+				if ($status_buy) {
+					if (empty($fourn_ref)) $fourn_ref = _createTarifFourn($fk_supplier, $line->fk_product, $fourn_ref, $line->qty, $data['pa'], $line->product_ref);
 
 					$tva = 0;
 					if (getDolGlobalString('PROPAL2SUPPLIER_TAKE_ORIGIN_TVA')) $tva = $line->tva_tx;
 
-					$res = $commande_fournisseur->addline($line->desc, $pa, $line->qty, $tva, $line->txlocaltax1, $line->txlocaltax2, $line->fk_product, (int)$line->fk_fournprice, $fourn_ref, $line->remise_percent, 'HT', 0.0, $line->product_type, $line->info_bits, false, $line->date_start, $line->date_end, $line->array_options, $line->fk_unit);
-
-
-
+					$line->txlocaltax1 = $line->txlocaltax1 ?? '';
+					$line->txlocaltax2 = $line->txlocaltax2 ?? '';
+					$res = $commande_fournisseur->addline($line->desc, $pa, $line->qty, $tva, $line->txlocaltax1, $line->txlocaltax2, $line->fk_product, (int) $line->fk_fournprice, $fourn_ref, $line->remise_percent, 'HT', 0.0, $line->product_type, $line->info_bits, false, $line->date_start, $line->date_end, $line->array_options, $line->fk_unit);
 
 					if ($dol_version >= 5.0) $commandedet_id = $res;
-					else if ($dol_version == 4.0)
-					{
+					else if ($dol_version == 4.0) {
 						// TODO marche pas la version 4.0 est fucked
-						$commandedet_id = $db->last_insert_id(MAIN_DB_PREFIX.'commande_fournisseurdet');
-					}
-					else
-					{
+						$commandedet_id = $db->last_insert_id(MAIN_DB_PREFIX . 'commande_fournisseurdet');
+					} else {
 						$commandedet_id = $commande_fournisseur->rowid; // [PH] Oui je sais ça semble pas logique, mais la fonction addline de dolibarr stock le fk_line dans le rowid de l'objet
 					}
 
-					if(!empty($conf->nomenclature->enabled)) {
+					if (! empty($conf->nomenclature->enabled)) {
 
 						dol_include_once('/nomenclature/class/nomenclature.class.php');
-						$n=new TNomenclature;
+						$n = new TNomenclature;
 						$PDOdb = new TPDOdb;
 						$n->loadByObjectId($PDOdb, $data['lineid'], $object_type);
-						if($n->iExist) {
+						if ($n->iExist) {
 							$n->reinit();
 							$n->fk_object = $commandedet_id;
 							$n->object_type = $commande_fournisseur->element;
 							$n->save($PDOdb);
 						}
-
 					}
 
-					if (!empty($fourn_ref))
-					{
+					if (! empty($fourn_ref)) {
 
 
 						$commande_fournisseur->updateline($commandedet_id, $line->desc, $pa, $line->qty, $line->remise_percent, $tva);
-
-
 					}
-				}
-				else {
+				} else {
 					$res = 0; // Hors achat
 				}
 
-				if($res<=0)
-				{
+				if ($res <= 0) {
 					$TError[] = $langs->trans('WarningLineHasNotAdded', $line->product_ref, $line->qty);
 				}
-
 			}
-
 			if (!empty($TError)) setEventMessages('', $TError, 'errors');
 
 			header('Location:'.dol_buildpath('/fourn/commande/card.php?id='.$fk_cmd_fourn,1));
