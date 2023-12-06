@@ -114,7 +114,7 @@ print '<td align="right" width="300">';
 print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
 print '<input type="hidden" name="token" value="'.newToken().'">';
 print '<input type="hidden" name="action" value="set_PROPAL2SUPPLIERORDER_TYPE_DOC">';
-print $form->selectarray('PROPAL2SUPPLIERORDER_TYPE_DOC', array('propal'=>$langs->trans('Proposal'),'order'=>$langs->trans('Order'),'both'=>$langs->trans('Both')), $conf->global->PROPAL2SUPPLIERORDER_TYPE_DOC);
+print $form->selectarray('PROPAL2SUPPLIERORDER_TYPE_DOC', array('propal'=>$langs->trans('Proposal'),'order'=>$langs->trans('Order'),'both'=>$langs->trans('Both')),  getDolGlobalString('PROPAL2SUPPLIERORDER_TYPE_DOC'));
 print '<input type="submit" class="button" value="'.$langs->trans("Modify").'">';
 print '</form>';
 print '</td></tr>';

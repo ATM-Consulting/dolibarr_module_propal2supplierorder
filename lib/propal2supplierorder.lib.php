@@ -25,7 +25,7 @@
 
 function propal2supplierorderAdminPrepareHead()
 {
-    global $langs, $conf;
+    global $langs, $conf, $object;
 
     $langs->load("propal2supplierorder@propal2supplierorder");
 
@@ -68,8 +68,8 @@ function _getcurrencyrate(&$ATMdb,$currency_code){
 	
 	$ATMdb->Execute($sql);
 	$ATMdb->Get_line();
-	
-	$Tres["currency_rate"] = round($ATMdb->Get_field('rate'),$conf->global->MAIN_MAX_DECIMALS_UNIT);
+
+	$Tres["currency_rate"] = round($ATMdb->Get_field('rate'), getDolGlobalString('MAIN_MAX_DECIMALS_UNIT'));
 	
 	return $Tres;
 }

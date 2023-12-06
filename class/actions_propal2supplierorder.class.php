@@ -66,11 +66,10 @@ class ActionsPropal2SupplierOrder extends \propal2supplierorder\RetroCompatCommo
 		global $langs,$conf,$user,$db;
 		$element = $object->element;
 		$langs->load('propal2supplierorder@propal2supplierorder');
-		
 		if (in_array('propalcard', explode(':', $parameters['context'])))
 		{
 			if($object->statut !=0 && !empty($object->lines) && $user->hasRight('fournisseur', 'facture', 'creer'))
-				{
+			{
 				if (getDolGlobalString('PROPAL2SUPPLIERORDER_TYPE_DOC') == 'propal' || getDolGlobalString('PROPAL2SUPPLIERORDER_TYPE_DOC') == 'both')
 				{
 					print '
