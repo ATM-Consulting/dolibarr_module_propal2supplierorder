@@ -75,7 +75,7 @@
 			$commande_fournisseur->cond_reglement_id = $supplier->cond_reglement_supplier_id;
 			$commande_fournisseur->mode_reglement_id = $supplier->mode_reglement_supplier_id;
 
-			$commande_fournisseur->delivery_date = $object->delivery_date;
+			if(property_exists($commande_fournisseur, 'delivery_date')) $commande_fournisseur->date_livraison = $object->delivery_date;;
 
 			if (!empty($conf->multicurrency->enabled))
 			{
@@ -120,15 +120,18 @@
 				$status_buy = 1;
 				$line = $object->lines[$k];
 				if (getDolGlobalString('PROPAL2SUPPLIERORDER_SHOW_SUBTOTAL_TITLE')) { // Importation des titres sous total
-					if ($data['subtotal'] == '50') { // ligne de texte sous total
+					if (TSubtotal::isFreeText($line)) { // ligne de texte sous total
+//					if ($data['subtotal'] == '50') { // ligne de texte sous total
 						Tsubtotal::addSubTotalLine($commande_fournisseur, $line->desc, $line->qty);
 						continue;
 					}
-                    if (!empty($data['subtitle_desc'])) { // ligne de Titre sous total
+                    if (TSubtotal::isTitle($line) ) { // ligne de Titre sous total
+//                    if (!empty($data['subtitle_desc'])) { // ligne de Titre sous total
 						Tsubtotal::addTitle($commande_fournisseur, $data['subtitle_desc'], $line->qty);
 						continue;
 					}
-					if ($data['subtotal'] == '99') { // ligne de sous total
+					if (TSubtotal::isSubtotal($line)) { // ligne de sous total
+//					if ($data['subtotal'] == '99') { // ligne de sous total
 						Tsubtotal::addSubTotalLine($commande_fournisseur, $line->label, $line->qty);
                         continue;
 					}
@@ -177,7 +180,6 @@
 					}
 
 					if (! empty($conf->nomenclature->enabled)) {
-
 						dol_include_once('/nomenclature/class/nomenclature.class.php');
 						$n = new TNomenclature;
 						$PDOdb = new TPDOdb;
@@ -307,7 +309,7 @@
 		//Récupération de toutes les commandes fournisseurs déjà faites pour cet élément
 		if(getDolGlobalString('PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED')){
 			$object->fetchObjectLinked();
-			$TCommandeFourn = $object->linkedObjects['order_supplier'];
+			$TCommandeFourn = !empty($object->linkedObjects['order_supplier']) ?? '';
 		}
 
 		$nb_nbsp = 0;
