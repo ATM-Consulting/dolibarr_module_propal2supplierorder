@@ -317,7 +317,7 @@
 			$add_warning = false;
 			$line->qty_already_ordered = 0;
 
-			if(getDolGlobalString('PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED')  && !empty($TCommandeFourn)){
+			if(getDolGlobalString('PROPAL2SUPPLIERORDER_CANT_ADD_PRODUCT_ALREDY_ORDERED')  && !empty($TCommandeFourn) && is_array($TCommandeFourn)){
 				foreach($TCommandeFourn as $commandeFourn){
 					foreach ($commandeFourn->lines as $linefourn) {
 						if($linefourn->fk_product == $line->fk_product){
