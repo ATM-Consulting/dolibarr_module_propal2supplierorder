@@ -76,7 +76,9 @@
 			$commande_fournisseur->mode_reglement_id = $supplier->mode_reglement_supplier_id;
 
 			if(property_exists($commande_fournisseur, 'date_livraison')) $commande_fournisseur->date_livraison = $object->date_livraison;
-			if(property_exists($commande_fournisseur, 'delivery_date')) $commande_fournisseur->date_livraison = $object->delivery_date;;
+			if(property_exists($commande_fournisseur, 'delivery_date')) $commande_fournisseur->delivery_date = $object->delivery_date;
+			if(property_exists($object, 'date_livraison')) $object->date_livraison = $commande_fournisseur->date_livraison;
+			if(property_exists($object, 'delivery_date')) $object->delivery_date = $commande_fournisseur->delivery_date;
 
 			if (!empty($conf->multicurrency->enabled))
 			{
