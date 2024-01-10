@@ -1,4 +1,10 @@
 ### Unreleased
+
+
+
+## Release 1.3 
+
+- NEW : TechATM + Page about - *08/01/2024* - 1.4.0
 - NEW : Dolibarr compatibility V19 - *05/12/2023* - 1.3.0  
   Changed Dolibarr compatibility range to 15 min - 19 max  
   Change PHP compatibility range to 7.0 min - 8.2 max

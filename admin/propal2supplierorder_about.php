@@ -22,55 +22,69 @@
  * 	\brief		This file is an example about page
  * 				Put some comments here
  */
-// Dolibarr environment
-$res = @include("../../main.inc.php"); // From htdocs directory
-if (! $res) {
-    $res = @include("../../../main.inc.php"); // From "custom" directory
-}
+
+// Load Dolibarr environment
+$res=0;
+// Try main.inc.php into web root known defined into CONTEXT_DOCUMENT_ROOT (not always defined)
+if (! $res && ! empty($_SERVER["CONTEXT_DOCUMENT_ROOT"])) $res=@include($_SERVER["CONTEXT_DOCUMENT_ROOT"]."/main.inc.php");
+// Try main.inc.php into web root detected using web root caluclated from SCRIPT_FILENAME
+$tmp=empty($_SERVER['SCRIPT_FILENAME'])?'':$_SERVER['SCRIPT_FILENAME'];$tmp2=realpath(__FILE__); $i=strlen($tmp)-1; $j=strlen($tmp2)-1;
+while($i > 0 && $j > 0 && isset($tmp[$i]) && isset($tmp2[$j]) && $tmp[$i]==$tmp2[$j]) { $i--; $j--; }
+if (! $res && $i > 0 && file_exists(substr($tmp, 0, ($i+1))."/main.inc.php")) $res=@include(substr($tmp, 0, ($i+1))."/main.inc.php");
+if (! $res && $i > 0 && file_exists(dirname(substr($tmp, 0, ($i+1)))."/main.inc.php")) $res=@include(dirname(substr($tmp, 0, ($i+1)))."/main.inc.php");
+// Try main.inc.php using relative path
+if (! $res && file_exists("../../main.inc.php")) $res=@include("../../main.inc.php");
+if (! $res && file_exists("../../../main.inc.php")) $res=@include("../../../main.inc.php");
+if (! $res) die("Include of main fails");
 
 // Libraries
 require_once DOL_DOCUMENT_ROOT . "/core/lib/admin.lib.php";
 require_once '../lib/propal2supplierorder.lib.php';
 
 // Translations
-$langs->load("propal2supplierorder@propal2supplierorder");
+$langs->loadLangs(array("errors", "admin", "propal2supplierorder@propal2supplierorder"));
 
 // Access control
-if (! $user->admin) {
-    accessforbidden();
-}
+if (!$user->admin) accessforbidden();
+
+// Parameters
+$action = GETPOST('action', 'aZ09');
+$backtopage = GETPOST('backtopage', 'alpha');
+
+
+/*
+ * Actions
+ */
+
+// None
+
 
 /*
  * View
  */
 $page_name = "Propal2SupplierOrderAbout";
 llxHeader('', $langs->trans($page_name));
-
+$newToken = function_exists('newToken') ? newToken() : $_SESSION['newtoken'];
 // Subheader
-$linkback = '<a href="' . DOL_URL_ROOT . '/admin/modules.php">'
-    . $langs->trans("BackToModuleList") . '</a>';
-print_fiche_titre($langs->trans($page_name), $linkback);
+$linkback = '<a href="'.($backtopage ? $backtopage : DOL_URL_ROOT.'/admin/modules.php?restore_lastsearch_values=1').'">'.$langs->trans("BackToModuleList").'</a>';
+
+print load_fiche_titre($langs->trans($page_name), $linkback, 'tools');
 
 // Configuration header
 $head = propal2supplierorderAdminPrepareHead();
-dol_fiche_head(
-    $head,
-    'about',
-    $langs->trans("Module104009Name"),
-    0,
-    'propal2supplierorder@propal2supplierorder'
-);
+print dol_get_fiche_head($head, 'about', 'About', 0, 'propal2supplierorder@propal2supplierorder');
 
-// About page goes here
-print '<div style="float: left;"><img src="../img/Dolibarr_Preferred_Partner_logo.png" /></div>';
-print '<div>'.$langs->trans('ATMAbout').'</div>';
 
-dol_fiche_end();
+require_once __DIR__ . '/../class/techatm.class.php';
+$techATM = new \propal2supplierorder\TechATM($db);
 
-print '<br><center>';
-print '<a href="http://www.atm-consulting.fr" target="_blank"><img src="../img/ATM_logo.jpg" /></a>';
-print '</center>';
+dol_include_once('/propal2supplierorder/core/modules/modPropal2SupplierOrder.class.php');
+$tmpmodule = new modPropal2SupplierOrder($db);
+print $techATM->getAboutPage($tmpmodule);
 
+
+// Page end
+print dol_get_fiche_end();
 llxFooter();
 
 $db->close();
