@@ -1,5 +1,7 @@
 ### Unreleased
 
+## Release 1.4
+- FIX : Warning Undefined variable $dolibarr_main_db_type  *03/01/2023* - 1.4.1
 
 
 ## Release 1.3 
